@@ -17,20 +17,32 @@ https://gradle.org/) — 构建工具
 * 系统原生、美观的 Compose + M3 界面
 * 轻量级，易于安装和使用
 * 可接入多种 LLM API
+> [!NOTE]
+> ### 目前预置的LLM提供商  
+> - [x] OpenAI/Azure OpenAI  
+> - [x] Google Gemini
+> ### 将来会加入的预置LLM提供商
+> - [ ] DeepSeek
+> - [ ] Dashscope(阿里云百炼)
+> - [ ] Claude
 
 ## 安装 / Installation
 
-1. 下载最新的 [Releases](../../releases) APK 文件
-2. 在 Android 设备上安装并打开应用
+1. 下载最新的 [Releases](https://github.com/HOE-Team/OpenDroidChat/releases) APK 文件
+2. 使用软件安装器安装
 
-## 开发构建 / Build from Source
+## 从源代码构建 / Build from Source
 
 确保已安装 **Android Studio** 或 **Gradle**。
 
+> [!IMPORTANT]
+> - 你可能需要使用VPN或代理来下载Gradle使用的外部资源。
+> - 你可能需要一台性能足够的计算机来完成编译。
+
 ```bash
 # 克隆仓库
-git clone https://github.com/yourname/yourproject.git
-cd yourproject
+git clone https://github.com/HOE-Team/OpenDroidChat.git
+cd OpenDroidChat
 
 # 使用 Gradle Wrapper 构建
 ./gradlew build    # Linux / macOS
