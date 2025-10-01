@@ -32,6 +32,8 @@ class LlmApiService {
             LlmProvider.OpenAI -> "https://api.openai.com/v1/chat/completions"
             // 注意：Gemini URL 中的模型名需要替换
             LlmProvider.Gemini -> "https://generativelanguage.googleapis.com/v1beta/models/MODEL_PLACEHOLDER:generateContent"
+            LlmProvider.DeepSeek -> "https://api.deepseek.com/v1/chat/completions"
+            LlmProvider.Dashscope -> "https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions"
             LlmProvider.Custom -> ""
         }
     }
@@ -69,12 +71,20 @@ class LlmApiService {
                 // 默认使用 Authorization Header
                 header("Authorization", "Bearer $apiKey")
 
-                // 针对 Gemini 示例，通常使用 URL 参数
-                if (config.provider == LlmProvider.Gemini) {
-                    parameter("key", apiKey)
-                    headers {
-                        remove(HttpHeaders.Authorization)
+                // 根据提供商定制请求头/参数
+                when (config.provider) {
+                    LlmProvider.Gemini -> {
+                        parameter("key", apiKey)
+                        headers {
+                            remove(HttpHeaders.Authorization)
+                        }
                     }
+                    LlmProvider.Dashscope -> { // <--- 新增 Dashscope 逻辑
+                        config.appId?.takeIf { it.isNotBlank() }?.let {
+                            header("X-DashScope-Appid", it)
+                        }
+                    }
+                    else -> { /* OpenAI, DeepSeek, Custom API 都使用默认的 Authorization Header */ }
                 }
 
                 contentType(ContentType.Application.Json)

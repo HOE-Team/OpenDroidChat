@@ -7,6 +7,8 @@ import kotlinx.serialization.Serializable
 enum class LlmProvider(val displayName: String) {
     OpenAI("OpenAI / Azure OpenAI"),
     Gemini("Google Gemini API"),
+    DeepSeek("DeepSeek"),
+    Dashscope("阿里云百炼(Dashscope)"),
     Custom("自定义 API")
 }
 
@@ -19,7 +21,8 @@ data class LlmModel(
     val apiKey: String,
     val modelName: String,
     val systemPrompt: String = "你是一个乐于助人的 AI 助手，以简洁明了的方式回答问题。",
-    val customApiUrl: String? = null
+    val customApiUrl: String? = null,
+    val appId: String? = null
 )
 
 // 聊天消息 (用于 UI 展示)

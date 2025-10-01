@@ -33,9 +33,10 @@ fun ModelEditScreen(
     var name by remember(modelToEdit) { mutableStateOf(modelToEdit?.name ?: "") }
     var apiKey by remember(modelToEdit) { mutableStateOf(modelToEdit?.apiKey ?: "") }
     var provider by remember(modelToEdit) { mutableStateOf(modelToEdit?.provider ?: LlmProvider.OpenAI) }
-    var modelName by remember(modelToEdit) { mutableStateOf(modelToEdit?.modelName ?: "gpt-4o") }
+    var modelName by remember(modelToEdit) { mutableStateOf(modelToEdit?.modelName ?: "") }
     var systemPrompt by remember(modelToEdit) { mutableStateOf(modelToEdit?.systemPrompt ?: "你是一个乐于助人的 AI 助手，以简洁明了的方式回答问题。") }
     var customApiUrl by remember(modelToEdit) { mutableStateOf(modelToEdit?.customApiUrl ?: "") }
+    var appId by remember(modelToEdit) { mutableStateOf(modelToEdit?.appId ?: "") } // <-- 确保 App ID 状态变量已声明
 
     var expanded by remember { mutableStateOf(false) }
 
@@ -56,6 +57,7 @@ fun ModelEditScreen(
         bottomBar = {
             Button(
                 onClick = {
+                    // 修正点 1: 在保存时包含 customApiUrl 和 appId
                     val newModel = LlmModel(
                         id = originalId.ifBlank { java.util.UUID.randomUUID().toString() },
                         name = name.trim(),
@@ -63,7 +65,10 @@ fun ModelEditScreen(
                         apiKey = apiKey.trim(),
                         modelName = modelName.trim(),
                         systemPrompt = systemPrompt.trim(),
-                        customApiUrl = customApiUrl.trim().takeIf { it.isNotBlank() }
+                        // 确保只有当 provider 为 Custom 时才保存 customApiUrl
+                        customApiUrl = customApiUrl.trim().takeIf { it.isNotBlank() && provider == LlmProvider.Custom },
+                        // 确保保存 appId
+                        appId = appId.trim().takeIf { it.isNotBlank() }
                     )
                     viewModel.addOrUpdateModel(newModel)
                     onSave()
@@ -89,7 +94,7 @@ fun ModelEditScreen(
                 value = name,
                 onValueChange = { name = it },
                 label = { Text("模型名称 (自定义)") },
-                placeholder = { Text("例如：我的 GPT-4o, 公司内部大模型") },
+                placeholder = { Text("例如：我的 Qwen, 公司内部大模型") },
                 modifier = Modifier.fillMaxWidth()
             )
 
@@ -118,6 +123,10 @@ fun ModelEditScreen(
                             onClick = {
                                 provider = p
                                 expanded = false
+
+                                // 切换提供商时清空 customApiUrl 和 appId，避免混淆
+                                customApiUrl = ""
+                                appId = ""
                             },
                             contentPadding = ExposedDropdownMenuDefaults.ItemContentPadding
                         )
@@ -130,7 +139,7 @@ fun ModelEditScreen(
                 value = modelName,
                 onValueChange = { modelName = it },
                 label = { Text("模型调用名称 (Model Name)*") },
-                placeholder = { Text("例如：gpt-4o, gemini-2.5-flash, Yi-34B") },
+                placeholder = { Text("例如：qwen-turbo, gpt-4o, gemini-2.5-flash") },
                 modifier = Modifier.fillMaxWidth()
             )
 
@@ -145,7 +154,7 @@ fun ModelEditScreen(
                 modifier = Modifier.fillMaxWidth()
             )
 
-            // 5. 自定义 API URL (仅当选择 "自定义" 时显示)
+            // 5. 自定义 API URL (仅当选择 "自定义 API" 时显示)
             if (provider == LlmProvider.Custom) {
                 OutlinedTextField(
                     value = customApiUrl,
@@ -156,7 +165,26 @@ fun ModelEditScreen(
                 )
             }
 
-            // 6. 系统提示词 (System Prompt)
+            // 修正点 2: App ID 输入框显示逻辑
+            // 仅当选择 "Dashscope" 或 "自定义 API" 时显示 App ID
+            if (provider == LlmProvider.Dashscope || provider == LlmProvider.Custom) {
+                OutlinedTextField(
+                    value = appId,
+                    onValueChange = { appId = it },
+                    label = {
+                        Text(
+                            when (provider) {
+                                LlmProvider.Dashscope -> "Dashscope 应用 ID (App ID, 可选)"
+                                else -> "应用 ID / 额外参数 (可选)"
+                            }
+                        )
+                    },
+                    placeholder = { Text("输入应用 ID 或留空") },
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+
+            // 7. 系统提示词 (System Prompt)
             OutlinedTextField(
                 value = systemPrompt,
                 onValueChange = { systemPrompt = it },

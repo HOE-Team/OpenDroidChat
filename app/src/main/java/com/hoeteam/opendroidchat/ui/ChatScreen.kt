@@ -115,7 +115,7 @@ fun EmptyConfigScreen(onNavigateToSettings: () -> Unit) {
         verticalArrangement = Arrangement.Center
     ) {
         Text(
-            text = "您尚未配置任何 LLM 模型。",
+            text = "您尚未配置任何 LLM 模型",
             style = MaterialTheme.typography.headlineSmall
         )
         Spacer(Modifier.height(16.dp))
