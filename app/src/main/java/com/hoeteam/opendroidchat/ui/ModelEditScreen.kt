@@ -94,7 +94,7 @@ fun ModelEditScreen(
                 value = name,
                 onValueChange = { name = it },
                 label = { Text("模型名称 (自定义)") },
-                placeholder = { Text("例如：我的 Qwen, 公司内部大模型") },
+                placeholder = { Text("例如：我的Qwen") },
                 modifier = Modifier.fillMaxWidth()
             )
 
@@ -107,7 +107,7 @@ fun ModelEditScreen(
                     value = provider.displayName,
                     onValueChange = {},
                     readOnly = true,
-                    label = { Text("LLM 提供商") },
+                    label = { Text("LLM API 提供商") },
                     trailingIcon = {
                         ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded)
                     },
@@ -188,8 +188,8 @@ fun ModelEditScreen(
             OutlinedTextField(
                 value = systemPrompt,
                 onValueChange = { systemPrompt = it },
-                label = { Text("系统提示词 (AI 角色设定)") },
-                placeholder = { Text("输入 LLM 的初始指令，定义 AI 的行为。") },
+                label = { Text("系统提示词 (Prompt)") },
+                placeholder = { Text("输入 LLM 的初始指令，自定义语言模型的行为。") },
                 maxLines = 5,
                 minLines = 3,
                 modifier = Modifier.fillMaxWidth()

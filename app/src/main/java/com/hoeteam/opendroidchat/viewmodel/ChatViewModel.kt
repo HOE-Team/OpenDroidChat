@@ -50,7 +50,7 @@ class ChatViewModel(
         val currentText = _inputText.value.trim()
 
         if (currentModel == null || currentModel.apiKey.isBlank() || currentModel.modelName.isBlank()) {
-            viewModelScope.launch { _errorState.emit("请先配置有效的 LLM 模型！") }
+            viewModelScope.launch { _errorState.emit("请先配置有效的 LLM API 实例！") }
             return
         }
 
@@ -63,7 +63,7 @@ class ChatViewModel(
 
         viewModelScope.launch {
             val apiMessages = _messages.value
-                .filter { !it.text.contains("LLM 响应出错") }
+                .filter { !it.text.contains("LLM API 响应出错") }
                 .map {
                     ApiMessage(
                         role = if (it.sender == Sender.USER) "user" else "assistant",
@@ -78,7 +78,7 @@ class ChatViewModel(
                 _messages.update { it + llmMessage }
 
             } catch (e: Exception) {
-                val errorMessage = "LLM 响应出错: ${e.message ?: "未知错误"}"
+                val errorMessage = "LLM API 响应出错: ${e.message ?: "未知错误"}"
                 val errorMsgForUi = Message(text = errorMessage, sender = Sender.LLM)
                 _messages.update { it + errorMsgForUi }
                 _errorState.emit("API 调用失败：${e.localizedMessage}")

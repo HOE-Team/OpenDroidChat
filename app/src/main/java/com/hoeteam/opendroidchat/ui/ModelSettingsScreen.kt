@@ -34,7 +34,7 @@ fun ModelSettingsScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("LLM 模型管理") },
+                title = { Text("LLM API 实例管理") },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "返回")
@@ -44,7 +44,7 @@ fun ModelSettingsScreen(
         },
         floatingActionButton = {
             FloatingActionButton(onClick = { onNavigateToEditModel(null) }) {
-                Icon(Icons.Filled.Add, contentDescription = "添加新模型")
+                Icon(Icons.Filled.Add, contentDescription = "添加新实例")
             }
         }
     ) { paddingValues ->
@@ -56,7 +56,7 @@ fun ModelSettingsScreen(
             if (allModels.isEmpty()) {
                 item {
                     Text(
-                        "点击右下角的 '+' 添加您的第一个 LLM 模型。",
+                        "点击右下角的 '+' 添加您的第一个 LLM API 实例。",
                         modifier = Modifier.padding(16.dp),
                         style = MaterialTheme.typography.bodyLarge
                     )
@@ -113,12 +113,12 @@ fun ModelListItem(
         }
 
         IconButton(onClick = onEdit) {
-            Icon(Icons.Filled.Edit, contentDescription = "编辑模型")
+            Icon(Icons.Filled.Edit, contentDescription = "编辑实例")
         }
 
         if (canBeDeleted) {
             IconButton(onClick = { onDelete(model) }) {
-                Icon(Icons.Filled.Delete, contentDescription = "删除模型", tint = MaterialTheme.colorScheme.error)
+                Icon(Icons.Filled.Delete, contentDescription = "删除实例", tint = MaterialTheme.colorScheme.error)
             }
         } else if (isDeletable && isSelected) {
             // 修正后的 TooltipBox (使用 positionProvider)
@@ -126,12 +126,12 @@ fun ModelListItem(
                 // 必须使用 positionProvider 参数
                 positionProvider = TooltipDefaults.rememberPlainTooltipPositionProvider(),
                 tooltip = {
-                    PlainTooltip { Text("请先切换到其他模型再删除") }
+                    PlainTooltip { Text("请先切换到其他实例再删除") }
                 },
                 state = rememberTooltipState() // 必须使用 rememberTooltipState()
             ) {
                 IconButton(onClick = { /* Do nothing */ }, enabled = false) {
-                    Icon(Icons.Filled.Delete, contentDescription = "删除模型", tint = MaterialTheme.colorScheme.surfaceVariant)
+                    Icon(Icons.Filled.Delete, contentDescription = "删除实例", tint = MaterialTheme.colorScheme.surfaceVariant)
                 }
             }
         }

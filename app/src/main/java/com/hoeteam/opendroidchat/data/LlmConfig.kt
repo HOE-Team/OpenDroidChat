@@ -20,7 +20,7 @@ data class LlmModel(
     val provider: LlmProvider,
     val apiKey: String,
     val modelName: String,
-    val systemPrompt: String = "你是一个乐于助人的 AI 助手，以简洁明了的方式回答问题。",
+    val systemPrompt: String, // 系统默认的提示词，这里没有加则意味着我想让用户自己选择加不加/怎么加
     val customApiUrl: String? = null,
     val appId: String? = null
 )

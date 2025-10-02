@@ -338,6 +338,6 @@ fun LoadingIndicator() {
             color = MaterialTheme.colorScheme.primary
         )
         Spacer(Modifier.width(8.dp))
-        Text("LLM 正在输入...", style = MaterialTheme.typography.bodySmall)
+        Text("正在等待 LLM API 响应...", style = MaterialTheme.typography.bodySmall)
     }
 }

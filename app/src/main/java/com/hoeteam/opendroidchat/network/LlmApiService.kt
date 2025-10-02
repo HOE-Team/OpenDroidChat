@@ -92,7 +92,7 @@ class LlmApiService {
             }.body()
 
             // 4. 提取响应文本
-            return response.choices.firstOrNull()?.message?.content ?: "未能获取到 LLM 响应。"
+            return response.choices.firstOrNull()?.message?.content ?: "未能获取到 LLM API 响应。"
 
         } catch (e: Exception) {
             val errorDetails = when (e) {
