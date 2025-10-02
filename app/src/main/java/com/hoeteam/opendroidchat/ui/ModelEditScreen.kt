@@ -78,7 +78,7 @@ fun ModelEditScreen(
                     .fillMaxWidth()
                     .padding(16.dp)
             ) {
-                Text(if (isNewModel) "保存并启用" else "保存修改")
+                Text(if (isNewModel) "保存" else "保存修改")
             }
         }
     ) { paddingValues ->

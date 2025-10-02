@@ -13,8 +13,8 @@ android {
         applicationId = "com.hoeteam.opendroidchat"
         minSdk = 21
         targetSdk = 35
-        versionCode = 2
-        versionName = "ALPHA-0.2-LLMProviderUpdate"
+        versionCode = 3
+        versionName = "ALPHA-0.3-MarkdownSupport"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -72,6 +72,10 @@ dependencies {
     implementation(libs.io.ktor.ktor.client.core6)
     implementation(libs.io.ktor.ktor.client.android6)
     implementation(libs.io.ktor.ktor.client.content.negotiation6)
+    implementation(libs.io.ktor.ktor.client.content.negotiation6)
     implementation(libs.io.ktor.ktor.serialization.kotlinx.json6)
     implementation("io.ktor:ktor-serialization-kotlinx-json:2.3.11")
+
+    // Markdown 库：直接使用字符串依赖，它依赖于 settings.gradle.kts 中的 JitPack 仓库
+    implementation("com.github.jeziellago:compose-markdown:0.5.7")
 }

@@ -25,6 +25,8 @@ import com.hoeteam.opendroidchat.viewmodel.ChatViewModelFactory
 import kotlinx.coroutines.launch
 import androidx.compose.foundation.shape.CornerSize
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.text.font.FontFamily
+import dev.jeziellago.compose.markdowntext.MarkdownText
 
 // --- 主聊天屏幕 ---
 @OptIn(ExperimentalMaterial3Api::class)
@@ -110,7 +112,9 @@ fun ChatScreen(
 @Composable
 fun EmptyConfigScreen(onNavigateToSettings: () -> Unit) {
     Column(
-        modifier = Modifier.fillMaxSize().padding(32.dp),
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(32.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
@@ -144,11 +148,8 @@ fun MessageBubble(message: Message) {
 
     val cornerSize = 16.dp
 
-    // 确保导入：import androidx.compose.foundation.shape.CornerSize
     val bubbleShape = RoundedCornerShape(cornerSize).copy(
-        // 当是用户消息时，右下角尖锐 (4.dp); 否则保持圆润 (cornerSize)
         bottomEnd = if (isUser) CornerSize(4.dp) else CornerSize(cornerSize),
-        // 当是LLM消息时，左下角尖锐 (4.dp); 否则保持圆润 (cornerSize)
         bottomStart = if (!isUser) CornerSize(4.dp) else CornerSize(cornerSize)
     )
 
@@ -166,12 +167,24 @@ fun MessageBubble(message: Message) {
             shape = bubbleShape,
             tonalElevation = 1.dp
         ) {
-            Text(
-                text = message.text,
-                color = textColor,
-                modifier = Modifier.padding(10.dp),
-                style = MaterialTheme.typography.bodyLarge
-            )
+            if (isUser) {
+                // 用户消息：普通 Text
+                Text(
+                    text = message.text,
+                    color = textColor,
+                    modifier = Modifier.padding(10.dp),
+                    style = MaterialTheme.typography.bodyLarge
+                )
+            } else {
+                // LLM 消息：MarkdownText
+                MarkdownText(
+                    markdown = message.text,
+                    modifier = Modifier.padding(10.dp),
+                    style = MaterialTheme.typography.bodyLarge.copy(
+                        color = textColor
+                    )
+                )
+            }
         }
     }
 }
@@ -188,7 +201,9 @@ fun ChatInput(
         color = MaterialTheme.colorScheme.surfaceContainer
     ) {
         Row(
-            modifier = Modifier.fillMaxWidth().padding(8.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             OutlinedTextField(
@@ -207,12 +222,9 @@ fun ChatInput(
 
             val isFabEnabled = text.isNotBlank() && !isLoading
 
-            // 修正后的 FloatingActionButton
             FloatingActionButton(
-                // 1. 使用 onClick 逻辑控制点击行为：只有在启用时才发送
-                onClick = if (isFabEnabled) onSend else ({ /* Do nothing */ }),
+                onClick = if (isFabEnabled) onSend else ({ }),
                 containerColor = MaterialTheme.colorScheme.primary,
-                // 2. 使用 Modifier.alpha 模拟禁用时的视觉效果
                 modifier = Modifier.alpha(if (isFabEnabled) 1f else 0.5f)
             ) {
                 if (isLoading) {
