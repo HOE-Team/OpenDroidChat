@@ -12,9 +12,10 @@ android {
     defaultConfig {
         applicationId = "com.hoeteam.opendroidchat"
         minSdk = 21
+        //noinspection OldTargetApi
         targetSdk = 35
-        versionCode = 4
-        versionName = "ALPHA-0.4-CodeBlockFix"
+        versionCode = 5
+        versionName = "ALPHA-0.5-UIUpdate"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }

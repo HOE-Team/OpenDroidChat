@@ -35,11 +35,7 @@ fun ModelSettingsScreen(
         topBar = {
             TopAppBar(
                 title = { Text("LLM API 实例管理") },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "返回")
-                    }
-                }
+                windowInsets = WindowInsets(0, 0, 0, 0),
             )
         },
         floatingActionButton = {

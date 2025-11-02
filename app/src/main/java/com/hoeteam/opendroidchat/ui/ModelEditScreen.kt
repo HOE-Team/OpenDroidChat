@@ -47,6 +47,7 @@ fun ModelEditScreen(
         topBar = {
             TopAppBar(
                 title = { Text(if (isNewModel) "添加新模型" else "编辑模型: ${modelToEdit?.name}") },
+                windowInsets = WindowInsets(0, 0, 0, 0),
                 navigationIcon = {
                     IconButton(onClick = onSave) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "返回")

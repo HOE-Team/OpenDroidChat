@@ -64,11 +64,7 @@ fun ChatScreen(
         topBar = {
             TopAppBar(
                 title = { Text(currentModel?.name ?: "LLM Chat") },
-                actions = {
-                    IconButton(onClick = onNavigateToSettings) {
-                        Icon(Icons.Filled.Settings, contentDescription = "设置")
-                    }
-                }
+                windowInsets = WindowInsets(0, 0, 0, 0),
             )
         },
         bottomBar = {
