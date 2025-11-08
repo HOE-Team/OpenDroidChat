@@ -11,11 +11,11 @@ android {
 
     defaultConfig {
         applicationId = "com.hoeteam.opendroidchat"
-        minSdk = 21
+        minSdk = 23
         //noinspection OldTargetApi
         targetSdk = 35
-        versionCode = 5
-        versionName = "ALPHA-0.5-UIUpdate"
+        versionCode = 6
+        versionName = "ALPHA-0.6-EncryptUpdate"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -80,4 +80,7 @@ dependencies {
     // Markdown 库(当前版本此方案弃用)
     implementation("com.github.jeziellago:compose-markdown:0.5.7") // Compose-Markdown
     //implementation("org.commonmark:commonmark:0.26.0") // Common Mark
+
+    implementation("androidx.compose.material:material-icons-core:1.7.8")
+    implementation("androidx.compose.material:material-icons-extended:1.7.8")
 }

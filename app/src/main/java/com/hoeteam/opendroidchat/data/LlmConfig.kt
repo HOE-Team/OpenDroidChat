@@ -1,5 +1,6 @@
 package com.hoeteam.opendroidchat.data
 
+import android.annotation.SuppressLint
 import androidx.compose.runtime.Immutable
 import kotlinx.serialization.Serializable
 
@@ -41,23 +42,27 @@ enum class Sender {
 
 // ----------------- API 传输数据模型 (用于 Ktor 序列化) -----------------
 
+@SuppressLint("UnsafeOptInUsageError")
 @Serializable
 data class ChatRequest(
     val model: String,
     val messages: List<ApiMessage>
 )
 
+@SuppressLint("UnsafeOptInUsageError")
 @Serializable
 data class ChatResponse(
     val id: String,
     val choices: List<Choice>
 )
 
+@SuppressLint("UnsafeOptInUsageError")
 @Serializable
 data class Choice(
     val message: ApiMessage
 )
 
+@SuppressLint("UnsafeOptInUsageError")
 @Serializable
 data class ApiMessage(
     val role: String, // "user" 或 "assistant"

@@ -1,5 +1,5 @@
 [versions]
-agp = "8.8.0"
+agp = "8.13.0"
 composeMarkdown = "1.6.0"
 githubComposeMarkdown = "0.3.7"
 ioKtorKtorClientCore4 = "2.3.11"

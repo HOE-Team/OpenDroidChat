@@ -27,12 +27,14 @@ import androidx.navigation.navArgument
 import androidx.navigation.NavType
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.mutableStateOf // <-- 新增
 import com.hoeteam.opendroidchat.data.SettingsRepository
 import com.hoeteam.opendroidchat.network.LlmApiService
 import com.hoeteam.opendroidchat.ui.ChatScreen
 import com.hoeteam.opendroidchat.ui.ModelEditScreen
 import com.hoeteam.opendroidchat.ui.ModelSettingsScreen
 import com.hoeteam.opendroidchat.ui.SettingsScreen
+import com.hoeteam.opendroidchat.ui.AboutScreen // <-- 新增
 // 请根据您的主题文件 (ui.theme/Theme.kt) 中定义的函数名修改此处的引用
 import com.hoeteam.opendroidchat.ui.theme.OpenDroidChatTheme
 import com.hoeteam.opendroidchat.viewmodel.ChatViewModel
@@ -59,6 +61,7 @@ object Destinations {
     const val MODEL_SETTINGS = "settings"
     const val MODEL_EDIT = "edit_model/{modelId}"
     const val SETTINGS_SCREEN = "app_settings"
+    const val ABOUT_SCREEN = "about_app" // <-- 新增关于页路由
     const val ARG_MODEL_ID = "modelId"
 }
 
@@ -69,6 +72,10 @@ fun MainNavigation() {
 
     val viewModel: ChatViewModel = viewModel(factory = ChatViewModelFactory(context))
 
+    // --- Dark Theme State (Placeholder) ---
+    // 作为一个示例状态，供 SettingsScreen 调用
+    val isDarkTheme = remember { mutableStateOf(false) }
+
     val screens = listOf(
         Destinations.CHAT_SCREEN to "聊天",
         Destinations.MODEL_SETTINGS to "模型",
@@ -78,16 +85,31 @@ fun MainNavigation() {
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = navBackStackEntry?.destination
 
+    // 统一的根屏幕导航逻辑
+    val navigateToRootScreen: (String) -> Unit = { route ->
+        navController.navigate(route) {
+            // Pop up to the start destination of the graph to avoid building up a large stack
+            popUpTo(navController.graph.findStartDestination().id) {
+                saveState = true
+            }
+            // Avoid multiple copies of the same destination when re-selecting the same item
+            launchSingleTop = true
+            // Restore state when re-selecting a previously selected item
+            restoreState = true
+        }
+    }
+
     val bottomBar: @Composable (NavController) -> Unit = { navController ->
-        // 检查当前路由是否是底部导航栏的路由之一
-        val shouldShowBottomBar = currentDestination?.route in screens.map { it.first }
+        // 检查当前路由是否是底部导航栏的路由之一 (只在根屏幕显示 BNB)
+        val rootRoutes = screens.map { it.first }.toSet()
+        val shouldShowBottomBar = currentDestination?.route in rootRoutes
         if (shouldShowBottomBar) {
             NavigationBar {
                 screens.forEach { (route, label) ->
                     NavigationBarItem(
                         icon = {
                             when (route) {
-                                Destinations.CHAT_SCREEN -> Icon(Icons.Filled.Home, contentDescription = label)
+                                Destinations.CHAT_SCREEN -> Icon(Icons.Filled.Chat, contentDescription = label) // 统一 Chat 图标
                                 Destinations.MODEL_SETTINGS -> Icon(Icons.Filled.List, contentDescription = label)
                                 Destinations.SETTINGS_SCREEN -> Icon(Icons.Filled.Settings, contentDescription = label)
                                 else -> Icon(Icons.Filled.MoreVert, contentDescription = label) // Fallback icon
@@ -95,18 +117,7 @@ fun MainNavigation() {
                         },
                         label = { Text(label) },
                         selected = currentDestination?.hierarchy?.any { it.route == route } == true,
-                        onClick = {
-                            navController.navigate(route) {
-                                // Pop up to the start destination of the graph to avoid building up a large stack
-                                popUpTo(navController.graph.findStartDestination().id) {
-                                    saveState = true
-                                }
-                                // Avoid multiple copies of the same destination when re-selecting the same item
-                                launchSingleTop = true
-                                // Restore state when re-selecting a previously selected item
-                                restoreState = true
-                            }
-                        }
+                        onClick = { navigateToRootScreen(route) } // 使用统一导航逻辑
                     )
                 }
             }
@@ -125,7 +136,8 @@ fun MainNavigation() {
             composable(Destinations.CHAT_SCREEN) {
                 ChatScreen(
                     viewModel = viewModel,
-                    onNavigateToSettings = { navController.navigate(Destinations.SETTINGS_SCREEN) }
+                    // 允许从 ChatScreen 内部（如配置为空时）导航到设置
+                    onNavigateToSettings = { navigateToRootScreen(Destinations.SETTINGS_SCREEN) }
                 )
             }
 
@@ -140,7 +152,7 @@ fun MainNavigation() {
                 )
             }
 
-            // 3. 模型编辑/新增界面 (包含 Unresolved reference 的修复)
+            // 3. 模型编辑/新增界面
             composable(
                 Destinations.MODEL_EDIT,
                 arguments = listOf(navArgument(Destinations.ARG_MODEL_ID) {
@@ -151,7 +163,6 @@ fun MainNavigation() {
             ) { backStackEntry ->
                 val modelId = backStackEntry.arguments?.getString(Destinations.ARG_MODEL_ID)
 
-                // 修复后的代码：
                 val allModelsList by viewModel.allModels.collectAsState()
 
                 val modelToEdit = remember(modelId) {
@@ -165,10 +176,21 @@ fun MainNavigation() {
                 )
             }
 
-            // 4. 应用程序设置界面
+            // 4. 应用程序设置界面 (FIXED PARAMETERS)
             composable(Destinations.SETTINGS_SCREEN) {
                 SettingsScreen(
-                    onBack = { navController.popBackStack() }
+                    // 传入所需参数，修复编译错误
+                    currentDarkTheme = isDarkTheme.value,
+                    onThemeToggle = { isDarkTheme.value = it },
+                    onNavigateToAbout = { navController.navigate(Destinations.ABOUT_SCREEN) }, // 导航到 About
+                    onNavigateToChat = { navigateToRootScreen(Destinations.CHAT_SCREEN) } // 导航到 Chat (通过 BNB 机制)
+                )
+            }
+
+            // 5. 新增：关于程序界面
+            composable(Destinations.ABOUT_SCREEN) {
+                AboutScreen(
+                    onBack = { navController.popBackStack() } // 返回到 SettingsScreen
                 )
             }
         }

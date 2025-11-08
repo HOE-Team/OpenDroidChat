@@ -1,133 +1,143 @@
+// SettingsScreen.kt
 package com.hoeteam.opendroidchat.ui
 
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.height
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
+import androidx.compose.material.icons.filled.DarkMode
+import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material3.Card
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.ListItem
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Switch
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.runtime.Composable
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.graphics.Color
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(
-    onBack: () -> Unit = {}
+    currentDarkTheme: Boolean,
+    onThemeToggle: (Boolean) -> Unit,
+    onNavigateToAbout: () -> Unit, // 导航到 AboutScreen 的回调
+    onNavigateToChat: () -> Unit,  // 导航到 Chat Screen 的回调 (已在 MainActivity 中处理)
 ) {
-    var darkThemeEnabled by remember { mutableStateOf(false) } // 示例状态
-
+    // 顶级 Column 作为容器
     Column(
         modifier = Modifier.fillMaxSize()
     ) {
-        // 使用与主页相同的 TopAppBar 样式
+        // 1. TopAppBar (固定在顶部)
         TopAppBar(
-            title = { Text("设置", fontWeight = FontWeight.Normal) }, // 使用粗体
+            title = { Text("设置", fontWeight = FontWeight.Normal) },
             windowInsets = WindowInsets(0, 0, 0, 0),
         )
 
+        // 2. 核心内容区域 (负责滚动)
         Column(
             modifier = Modifier
-                .weight(1f) // 占据剩余空间
-                .padding(16.dp)
+                .fillMaxWidth()
                 .verticalScroll(rememberScrollState())
         ) {
-            // 主题切换开关
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // --- 1. 红色 Card (修正左右边距) ---
             Card(
+                // FIX: 在这里应用水平填充 (16.dp)，使其不再紧贴屏幕边缘
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(bottom = 16.dp)
+                    .padding(horizontal = 16.dp)
             ) {
-                Row(
+                Column(
                     modifier = Modifier
+                        // Card 内部的背景色和内容填充保持不变
+                        .background(MaterialTheme.colorScheme.errorContainer)
                         .fillMaxWidth()
-                        .padding(16.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
+                        .padding(16.dp) // 内部内容填充
                 ) {
-                    Text(
-                        text = "深色主题(暂不可用)",
-                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold) // 标题使用粗体
+                    // 第一排：图标
+                    Icon(
+                        Icons.Filled.Warning,
+                        contentDescription = "警告",
+                        tint = MaterialTheme.colorScheme.onErrorContainer
                     )
-                    Switch(
-                        checked = darkThemeEnabled,
-                        onCheckedChange = { darkThemeEnabled = it }
+                    Spacer(modifier = Modifier.height(8.dp)) // 间隔
+                    // 第二排：显示“text文本”
+                    Text(
+                        text = "技术测试版本(Alpha)，极不稳定，可能导致数据丢失。",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onErrorContainer
                     )
                 }
             }
 
-            // 版本说明
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 16.dp)
-            ) {
-                Column(
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // --- 2. Padded ListItems Group (用于对齐 ListItem) ---
+            // ListItems 所在的 Column 仍然需要水平填充来对齐其内容
+            Column(modifier = Modifier.padding(horizontal = 16.dp)) {
+
+                // 2. 主题切换项 (ListItem)
+                ListItem(
+                    headlineContent = { Text("深色模式 (暂不可用)") },
+                    leadingContent = {
+                        Icon(
+                            Icons.Filled.DarkMode,
+                            contentDescription = "深色模式",
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    },
+                    trailingContent = {
+                        Switch(
+                            checked = currentDarkTheme,
+                            onCheckedChange = onThemeToggle,
+                            enabled = false
+                        )
+                    },
+                    // ListItem 默认背景色与父容器颜色保持一致即可，不需要额外设置
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                HorizontalDivider()
+
+                // 3. 关于页跳转项 (ListItem)
+                ListItem(
+                    headlineContent = { Text("关于 OpenDroidChat") },
+                    supportingContent = { Text("版本信息和项目详情") },
+                    leadingContent = {
+                        Icon(
+                            Icons.Filled.Info,
+                            contentDescription = "关于程序",
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    },
+                    trailingContent = { Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = null) },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(16.dp)
-                ) {
-                    Text(
-                        text = "关于 OpenDroidChat",
-                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold), // 标题使用粗体
-                        modifier = Modifier.padding(bottom = 8.dp)
-                    )
-                    Text(
-                        text = "OpenDroidChat 是一款适用于 Android 5(API24)+ 的 LLM API 聊天客户端，UI界面使用了Google的Material Design 3设计框架。",
-                        style = MaterialTheme.typography.bodyMedium
-                    )
-                }
+                        .clickable { onNavigateToAbout() }
+                )
+
+                HorizontalDivider()
             }
-            // 应用简介卡片
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 16.dp)
-            ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp)
-                ) {
-                    Text(
-                        text = "版本信息",
-                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold), // 标题使用粗体
-                        modifier = Modifier.padding(bottom = 8.dp)
-                    )
-                    Text(
-                        text="Version Alpha-0.5-UIUpdate" ,
-                        style = MaterialTheme.typography.bodyMedium
-                    )
-                    Text(
-                        text="* 测试版本，极不稳定，可能导致数据丢失或安全问题。",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = Color.Red,
-                    )
-                }
-            }
-            // 版权信息
-            Card(
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp)
-                ) {
-                    Text(
-                        text = "版权信息",
-                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold), // 标题使用粗体
-                        modifier = Modifier.padding(bottom = 8.dp)
-                    )
-                    Text(
-                        text = "版权所有 ©2025 HOE Team ，保留所有权利。\n源码使用MIT协议开源",
-                        style = MaterialTheme.typography.bodyMedium
-                    )
-                }
-            }
+
+            Spacer(modifier = Modifier.height(16.dp)) // 底部留白
         }
     }
 }
