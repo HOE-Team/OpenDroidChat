@@ -78,7 +78,7 @@ fun AboutScreen(
                     modifier = Modifier.padding(bottom = 8.dp)
                 )
                 Text(
-                    text="Version Alpha-0.5-UIUpdate" ,
+                    text="Version Alpha-0.6-EncryptUpdate" ,
                     style = MaterialTheme.typography.bodyMedium
                 )
                 Text(
@@ -106,7 +106,7 @@ fun AboutScreen(
                     modifier = Modifier.padding(bottom = 8.dp)
                 )
                 Text(
-                    text = "版权所有 ©2025 HOE Team ，保留所有权利。\n源码使用MIT协议开源\n" +
+                    text = "版权所有 ©2025 HOE Team ，保留所有权利。\n源码使用MIT协议开源\n\n" +
                             "Copyright ©2025 HOE Team. All rights reserved.\nLicense: MIT",
                     style = MaterialTheme.typography.bodyMedium
                 )
