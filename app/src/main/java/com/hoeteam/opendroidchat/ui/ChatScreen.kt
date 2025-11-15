@@ -35,7 +35,9 @@ import kotlinx.coroutines.launch
 @Composable
 fun ChatScreen(
     viewModel: ChatViewModel = viewModel(factory = ChatViewModelFactory(LocalContext.current)),
-    onNavigateToSettings: () -> Unit
+    onNavigateToSettings: () -> Unit,
+    // FIX 1: 新增导航到模型设置的回调
+    onNavigateToModelSettings: () -> Unit
 ) {
     val currentModel by viewModel.currentModel.collectAsState()
     val messages by viewModel.messages.collectAsState()
@@ -55,7 +57,8 @@ fun ChatScreen(
     }
 
     if (currentModel == null) {
-        EmptyConfigScreen(onNavigateToSettings)
+        // FIX 2: 切换到 ModelSettings 导航回调
+        EmptyConfigScreen(onNavigateToModelSettings)
         return
     }
 
@@ -107,7 +110,8 @@ fun ChatScreen(
 
 // ------------------- 子组件 -------------------
 @Composable
-fun EmptyConfigScreen(onNavigateToSettings: () -> Unit) {
+// FIX 3: 接收新的导航回调
+fun EmptyConfigScreen(onNavigateToModelSettings: () -> Unit) {
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -121,7 +125,8 @@ fun EmptyConfigScreen(onNavigateToSettings: () -> Unit) {
         )
         Spacer(Modifier.height(16.dp))
         Button(
-            onClick = onNavigateToSettings,
+            // FIX 4: 按钮点击事件更改为跳转到 ModelSettings
+            onClick = onNavigateToModelSettings,
             contentPadding = PaddingValues(horizontal = 24.dp, vertical = 12.dp)
         ) {
             Text("立即添加模型")
@@ -131,6 +136,7 @@ fun EmptyConfigScreen(onNavigateToSettings: () -> Unit) {
 
 @Composable
 fun MessageBubble(message: Message) {
+// ... (MessageBubble 内容保持不变)
     val isUser = message.sender == Sender.USER
     val bubbleColor = when {
         isUser -> MaterialTheme.colorScheme.primary
@@ -184,6 +190,7 @@ fun MessageBubble(message: Message) {
 // ------------------- 混合 Markdown 渲染 -------------------
 @Composable
 fun HybridMarkdown(
+// ... (HybridMarkdown 内容保持不变)
     text: String,
     modifier: Modifier = Modifier,
     normalTextColor: Color = MaterialTheme.colorScheme.onSurface
@@ -268,6 +275,7 @@ fun HybridMarkdown(
 // ------------------- 输入框 -------------------
 @Composable
 fun ChatInput(
+// ... (ChatInput 内容保持不变)
     text: String,
     onTextChange: (String) -> Unit,
     onSend: () -> Unit,

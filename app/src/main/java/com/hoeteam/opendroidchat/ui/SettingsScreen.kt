@@ -37,7 +37,7 @@ fun SettingsScreen(
     currentDarkTheme: Boolean,
     onThemeToggle: (Boolean) -> Unit,
     onNavigateToAbout: () -> Unit, // 导航到 AboutScreen 的回调
-    onNavigateToChat: () -> Unit,  // 导航到 Chat Screen 的回调 (已在 MainActivity 中处理)
+    onNavigateToChat: () -> Unit,
 ) {
     // 顶级 Column 作为容器
     Column(

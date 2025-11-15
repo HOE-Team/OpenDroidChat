@@ -27,14 +27,14 @@ import androidx.navigation.navArgument
 import androidx.navigation.NavType
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.mutableStateOf // <-- 新增
+import androidx.compose.runtime.mutableStateOf
 import com.hoeteam.opendroidchat.data.SettingsRepository
 import com.hoeteam.opendroidchat.network.LlmApiService
 import com.hoeteam.opendroidchat.ui.ChatScreen
 import com.hoeteam.opendroidchat.ui.ModelEditScreen
 import com.hoeteam.opendroidchat.ui.ModelSettingsScreen
 import com.hoeteam.opendroidchat.ui.SettingsScreen
-import com.hoeteam.opendroidchat.ui.AboutScreen // <-- 新增
+import com.hoeteam.opendroidchat.ui.AboutScreen
 // 请根据您的主题文件 (ui.theme/Theme.kt) 中定义的函数名修改此处的引用
 import com.hoeteam.opendroidchat.ui.theme.OpenDroidChatTheme
 import com.hoeteam.opendroidchat.viewmodel.ChatViewModel
@@ -61,7 +61,7 @@ object Destinations {
     const val MODEL_SETTINGS = "settings"
     const val MODEL_EDIT = "edit_model/{modelId}"
     const val SETTINGS_SCREEN = "app_settings"
-    const val ABOUT_SCREEN = "about_app" // <-- 新增关于页路由
+    const val ABOUT_SCREEN = "about_app"
     const val ARG_MODEL_ID = "modelId"
 }
 
@@ -136,8 +136,10 @@ fun MainNavigation() {
             composable(Destinations.CHAT_SCREEN) {
                 ChatScreen(
                     viewModel = viewModel,
-                    // 允许从 ChatScreen 内部（如配置为空时）导航到设置
-                    onNavigateToSettings = { navigateToRootScreen(Destinations.SETTINGS_SCREEN) }
+                    // 允许从 ChatScreen 内部（如配置为空时）导航到通用设置
+                    onNavigateToSettings = { navigateToRootScreen(Destinations.SETTINGS_SCREEN) },
+                    // FIX: 新增导航到模型列表的回调 (用于 EmptyConfigScreen 按钮)
+                    onNavigateToModelSettings = { navigateToRootScreen(Destinations.MODEL_SETTINGS) }
                 )
             }
 
