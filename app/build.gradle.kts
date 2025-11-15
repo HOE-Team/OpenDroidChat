@@ -15,7 +15,7 @@ android {
         //noinspection OldTargetApi
         targetSdk = 35
         versionCode = 6
-        versionName = "ALPHA-0.6-EncryptUpdate"
+        versionName = "ALPHA-0.6fix-NavgationFix"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
