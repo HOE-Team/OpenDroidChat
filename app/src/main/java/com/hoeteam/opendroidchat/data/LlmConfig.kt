@@ -10,6 +10,7 @@ enum class LlmProvider(val displayName: String) {
     Gemini("Google Gemini API"),
     DeepSeek("DeepSeek"),
     Dashscope("阿里云百炼(Dashscope)"),
+    Claude("Claude"),
     Custom("自定义 API")
 }
 

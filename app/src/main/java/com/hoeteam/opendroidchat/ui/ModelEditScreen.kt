@@ -34,7 +34,7 @@ fun ModelEditScreen(
     var apiKey by remember(modelToEdit) { mutableStateOf(modelToEdit?.apiKey ?: "") }
     var provider by remember(modelToEdit) { mutableStateOf(modelToEdit?.provider ?: LlmProvider.OpenAI) }
     var modelName by remember(modelToEdit) { mutableStateOf(modelToEdit?.modelName ?: "") }
-    var systemPrompt by remember(modelToEdit) { mutableStateOf(modelToEdit?.systemPrompt ?: "你是一个乐于助人的 AI 助手，以简洁明了的方式回答问题。") }
+    var systemPrompt by remember(modelToEdit) { mutableStateOf(modelToEdit?.systemPrompt ?: "") }
     var customApiUrl by remember(modelToEdit) { mutableStateOf(modelToEdit?.customApiUrl ?: "") }
     var appId by remember(modelToEdit) { mutableStateOf(modelToEdit?.appId ?: "") } // <-- 确保 App ID 状态变量已声明
 
@@ -94,7 +94,7 @@ fun ModelEditScreen(
             OutlinedTextField(
                 value = name,
                 onValueChange = { name = it },
-                label = { Text("模型名称 (自定义)") },
+                label = { Text("模型名称 (自定义)*") },
                 placeholder = { Text("例如：我的Qwen") },
                 modifier = Modifier.fillMaxWidth()
             )

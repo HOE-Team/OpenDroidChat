@@ -22,7 +22,7 @@ class SettingsRepository(private val context: Context) {
     private val dataStore = context.dataStore
 
     // 实例化加密工具
-    private val encryptionUtil = KeyStoreEncryptionUtil() // <-- NEW
+    private val encryptionUtil = KeyStoreEncryptionUtil()
 
     private object PreferencesKeys {
         val MODELS_LIST = stringPreferencesKey("llm_models_list")

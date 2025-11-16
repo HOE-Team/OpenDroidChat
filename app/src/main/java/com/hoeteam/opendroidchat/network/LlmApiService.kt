@@ -34,6 +34,7 @@ class LlmApiService {
             LlmProvider.Gemini -> "https://generativelanguage.googleapis.com/v1beta/models/MODEL_PLACEHOLDER:generateContent"
             LlmProvider.DeepSeek -> "https://api.deepseek.com/v1/chat/completions"
             LlmProvider.Dashscope -> "https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions"
+            LlmProvider.Claude -> "https://api.anthropic.com/v1/messages"
             LlmProvider.Custom -> ""
         }
     }

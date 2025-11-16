@@ -14,8 +14,8 @@ android {
         minSdk = 23
         //noinspection OldTargetApi
         targetSdk = 35
-        versionCode = 6
-        versionName = "ALPHA-0.6fix-NavgationFix"
+        versionCode = 7
+        versionName = "ALPHA-0.7-ClaudeSupport"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
