@@ -1,0 +1,95 @@
+plugins {
+    alias(libs.plugins.android.application)
+    alias(libs.plugins.kotlin.android)
+    alias(libs.plugins.kotlin.compose)
+    id("org.jetbrains.kotlin.plugin.serialization")
+}
+
+android {
+    namespace = "com.hoeteam.opendroidchat"
+    compileSdk = 36
+
+    defaultConfig {
+        applicationId = "com.hoeteam.opendroidchat"
+        minSdk = 23
+        targetSdk = 36
+        versionCode = 9
+        versionName = "BETA-0.9-ThemeUpdate"
+
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+    }
+
+    signingConfigs {
+        create("release") {
+            storeFile = file(project.findProperty("STORE_FILE") as String)
+            storePassword = project.findProperty("STORE_PASSWORD") as String
+            keyAlias = project.findProperty("KEY_ALIAS") as String
+            keyPassword = project.findProperty("KEY_PASSWORD") as String
+        }
+    }
+
+    buildTypes {
+        release {
+            isMinifyEnabled = false
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro"
+            )
+            signingConfig = signingConfigs.getByName("release")
+        }
+    }
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_11
+        targetCompatibility = JavaVersion.VERSION_11
+    }
+    kotlinOptions {
+        jvmTarget = "11"
+    }
+    buildFeatures {
+        compose = true
+    }
+}
+
+dependencies {
+
+    implementation(libs.androidx.core.ktx)
+    implementation(libs.androidx.lifecycle.runtime.ktx)
+    implementation(libs.androidx.activity.compose)
+    implementation(platform(libs.androidx.compose.bom))
+    implementation(libs.androidx.ui)
+    implementation(libs.androidx.ui.graphics)
+    implementation(libs.androidx.ui.tooling.preview)
+    implementation(libs.androidx.material3)
+    testImplementation(libs.junit)
+    androidTestImplementation(libs.androidx.junit)
+    androidTestImplementation(libs.androidx.espresso.core)
+    androidTestImplementation(platform(libs.androidx.compose.bom))
+    androidTestImplementation(libs.androidx.ui.test.junit4)
+    debugImplementation(libs.androidx.ui.tooling)
+    debugImplementation(libs.androidx.ui.test.manifest)
+    implementation(libs.androidx.navigation.compose)
+
+    // ViewModel Compose 扩展
+    implementation(libs.androidx.lifecycle.viewmodel.compose)
+
+    // DataStore (配置存储)
+    implementation(libs.androidx.datastore.datastore.preferences6)
+
+    // JSON 序列化/反序列化 (用于 DataStore 存储复杂对象)
+    implementation(libs.com.google.code.gson.gson6)
+
+    // LLM API 网络请求 (Ktor 客户端)
+    implementation(libs.io.ktor.ktor.client.core6)
+    implementation(libs.io.ktor.ktor.client.android6)
+    implementation(libs.io.ktor.ktor.client.content.negotiation6)
+    implementation(libs.io.ktor.ktor.client.content.negotiation6)
+    implementation(libs.io.ktor.ktor.serialization.kotlinx.json6)
+    implementation("io.ktor:ktor-serialization-kotlinx-json:2.3.11")
+
+    // Markdown 库(当前版本此方案弃用)
+    implementation("com.github.jeziellago:compose-markdown:0.5.7") // Compose-Markdown
+    //implementation("org.commonmark:commonmark:0.26.0") // Common Mark
+
+    implementation("androidx.compose.material:material-icons-core:1.7.8")
+    implementation("androidx.compose.material:material-icons-extended:1.7.8")
+}
