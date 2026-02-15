@@ -14,7 +14,7 @@ android {
         minSdk = 23
         targetSdk = 36
         versionCode = 9
-        versionName = "BETA-0.9-ThemeUpdate"
+        versionName = "nightly-1.0-20260215a"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
