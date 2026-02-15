@@ -86,9 +86,8 @@ dependencies {
     implementation(libs.io.ktor.ktor.serialization.kotlinx.json6)
     implementation("io.ktor:ktor-serialization-kotlinx-json:2.3.11")
 
-    // Markdown 库(当前版本此方案弃用)
-    implementation("com.github.jeziellago:compose-markdown:0.5.7") // Compose-Markdown
-    //implementation("org.commonmark:commonmark:0.26.0") // Common Mark
+    // Markdown 渲染 (直接使用 Markwon 以支持深色模式下行内代码主题)
+    implementation("io.noties.markwon:core:4.6.2")
 
     implementation("androidx.compose.material:material-icons-core:1.7.8")
     implementation("androidx.compose.material:material-icons-extended:1.7.8")

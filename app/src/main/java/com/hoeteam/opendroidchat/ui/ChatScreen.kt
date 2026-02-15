@@ -17,17 +17,24 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import android.util.TypedValue
+import android.widget.TextView
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.hoeteam.opendroidchat.data.Message
 import com.hoeteam.opendroidchat.data.Sender
 import com.hoeteam.opendroidchat.viewmodel.ChatViewModel
 import com.hoeteam.opendroidchat.viewmodel.ChatViewModelFactory
-import dev.jeziellago.compose.markdowntext.MarkdownText
+import io.noties.markwon.AbstractMarkwonPlugin
+import io.noties.markwon.Markwon
+import io.noties.markwon.core.MarkwonTheme
 import kotlinx.coroutines.launch
 
 // --- 主聊天屏幕 ---
@@ -229,10 +236,12 @@ fun HybridMarkdown(
                     // flush normalBuffer as normal markdown
                     if (normalBuffer.isNotEmpty()) {
                         val content = normalBuffer.joinToString("\n")
-                        MarkdownText(
+                        ThemedMarkdownText(
                             markdown = content,
                             modifier = Modifier.fillMaxWidth(),
-                            style = MaterialTheme.typography.bodyLarge.copy(color = normalTextColor)
+                            textColor = normalTextColor,
+                            codeBackgroundColor = codeBackground,
+                            codeTextColor = codeTextColor
                         )
                         normalBuffer.clear()
                     }
@@ -261,16 +270,63 @@ fun HybridMarkdown(
                     )
                 }
             } else {
-                MarkdownText(
+                ThemedMarkdownText(
                     markdown = normalBuffer.joinToString("\n"),
                     modifier = Modifier.fillMaxWidth(),
-                    style = MaterialTheme.typography.bodyLarge.copy(color = normalTextColor)
+                    textColor = normalTextColor,
+                    codeBackgroundColor = codeBackground,
+                    codeTextColor = codeTextColor
                 )
             }
         }
     }
 }
 
+
+// ------------------- 主题感知 Markdown 渲染 -------------------
+@Composable
+fun ThemedMarkdownText(
+    markdown: String,
+    modifier: Modifier = Modifier,
+    style: TextStyle = MaterialTheme.typography.bodyLarge,
+    textColor: Color = MaterialTheme.colorScheme.onSurface,
+    codeBackgroundColor: Color = MaterialTheme.colorScheme.surfaceVariant,
+    codeTextColor: Color = MaterialTheme.colorScheme.onSurfaceVariant
+) {
+    val context = LocalContext.current
+    val textColorArgb = textColor.toArgb()
+    val codeBgArgb = codeBackgroundColor.toArgb()
+    val codeTextArgb = codeTextColor.toArgb()
+
+    val markwon = remember(codeBgArgb, codeTextArgb) {
+        Markwon.builder(context)
+            .usePlugin(object : AbstractMarkwonPlugin() {
+                override fun configureTheme(builder: MarkwonTheme.Builder) {
+                    builder
+                        .codeBackgroundColor(codeBgArgb)
+                        .codeTextColor(codeTextArgb)
+                }
+            })
+            .build()
+    }
+
+    AndroidView(
+        modifier = modifier,
+        factory = { ctx ->
+            TextView(ctx).apply {
+                setTextColor(textColorArgb)
+                if (style.fontSize.isSp) {
+                    setTextSize(TypedValue.COMPLEX_UNIT_SP, style.fontSize.value)
+                }
+                movementMethod = android.text.method.LinkMovementMethod.getInstance()
+            }
+        },
+        update = { textView ->
+            textView.setTextColor(textColorArgb)
+            markwon.setMarkdown(textView, markdown)
+        }
+    )
+}
 
 // ------------------- 输入框 -------------------
 @Composable
