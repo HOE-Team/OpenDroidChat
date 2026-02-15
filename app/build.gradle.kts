@@ -21,10 +21,23 @@ android {
 
     signingConfigs {
         create("release") {
-            storeFile = file(project.findProperty("STORE_FILE") as String)
-            storePassword = project.findProperty("STORE_PASSWORD") as String
-            keyAlias = project.findProperty("KEY_ALIAS") as String
-            keyPassword = project.findProperty("KEY_PASSWORD") as String
+            val storeFileProp = project.findProperty("STORE_FILE") as String?
+            val storePasswordProp = project.findProperty("STORE_PASSWORD") as String?
+            val keyAliasProp = project.findProperty("KEY_ALIAS") as String?
+            val keyPasswordProp = project.findProperty("KEY_PASSWORD") as String?
+            
+            if (storeFileProp != null) {
+                storeFile = file(storeFileProp)
+            }
+            if (storePasswordProp != null) {
+                storePassword = storePasswordProp
+            }
+            if (keyAliasProp != null) {
+                keyAlias = keyAliasProp
+            }
+            if (keyPasswordProp != null) {
+                keyPassword = keyPasswordProp
+            }
         }
     }
 
