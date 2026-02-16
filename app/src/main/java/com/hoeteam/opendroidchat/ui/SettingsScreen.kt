@@ -58,6 +58,34 @@ fun SettingsScreen(
 
             Spacer(modifier = Modifier.height(8.dp))
 
+            Card(
+                // FIX: 应用水平填充 (16.dp)，使其不再紧贴屏幕边缘
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp)
+            ) {
+                Column(
+                    modifier = Modifier
+                        // Card 内部的背景色和内容填充保持不变
+                        .background(MaterialTheme.colorScheme.errorContainer)
+                        .fillMaxWidth()
+                        .padding(16.dp) // 内部内容填充
+                ) {
+                    // 第一排：图标
+                    Icon(
+                        Icons.Filled.Warning,
+                        contentDescription = "警告",
+                        tint = MaterialTheme.colorScheme.onErrorContainer
+                    )
+                    Spacer(modifier = Modifier.height(8.dp)) // 间隔
+                    // 第二排：显示“text文本”
+                    Text(
+                        text = "发布前测试版本(Nightly)，不稳定，可能导致数据丢失。",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onErrorContainer
+                    )
+                }
+            }
             // --- 2. Padded ListItems Group (用于对齐 ListItem) ---
             // ListItems 所在的 Column 仍然需要水平填充来对齐其内容
             Column(modifier = Modifier.padding(horizontal = 16.dp)) {

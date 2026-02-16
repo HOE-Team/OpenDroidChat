@@ -78,11 +78,11 @@ fun AboutScreen(
                     modifier = Modifier.padding(bottom = 8.dp)
                 )
                 Text(
-                    text="Version STABLE-0.8Fix-UIComp.Removed(8)" ,
+                    text="Version NIGHTLY-1.0-20260216a (11)" ,
                     style = MaterialTheme.typography.bodyMedium
                 )
                 Text(
-                    text = "你正在使用Stable版本！\n请定期访问 https://github.com/HOE-Team/OpenDroidChat/releases 以获取最新版本",
+                    text = "你正在使用Unstable(Nightly)版本！\n请定期访问 https://github.com/HOE-Team/OpenDroidChat/releases 以获取最新版本",
                     // text="* 测试版本，极不稳定，可能导致数据丢失或安全问题。",
                     style = MaterialTheme.typography.bodyMedium,
                     // color = Color.Red,

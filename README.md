@@ -30,7 +30,7 @@
 * [**Jetpack Compose**[↗]](https://developer.android.com/jetpack/compose) — 声明式 UI 框架
 * [**Material Design 3 (M3)**[↗]](https://m3.material.io/) — 原生 GUI 设计实现
 * [**Gradle**[↗]](https://gradle.org/) — 构建工具
-* [**Compose Markdown**[↗]](https://github.com/jeziellago/compose-markdown) — 用于渲染 LLM 消息中的 Markdown
+* [**Markwon**[↗]]() — 用于渲染 LLM 消息中的 Markdown
 * [**OkHttp**[↗]](https://square.ac.cn/okhttp/) — 高效、功能强大的 Java/Android HTTP 客户端。
 
 ## ✨ 特性
