@@ -15,8 +15,10 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.hoeteam.opendroidchat.data.UpdateManager
 import com.hoeteam.opendroidchat.network.UpdateCheckResult
@@ -32,6 +34,13 @@ fun AboutScreen(
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val updateManager = remember { UpdateManager(context) }
+
+    // 获取屏幕配置
+    val configuration = LocalConfiguration.current
+    // 计算屏幕密度独立像素宽度 (dp)
+    val screenWidthDp = configuration.screenWidthDp.dp
+    // 判断是否为低DPI设备（宽度小于360dp的设备通常被认为是低DPI或小屏幕设备）
+    val isLowDpi = screenWidthDp < 360.dp
 
     // 当前版本
     val currentVersion by remember { mutableStateOf(updateManager.getCurrentVersion()) }
@@ -246,7 +255,7 @@ fun AboutScreen(
                                 }
                                 else -> {
                                     Icon(
-                                        Icons.Default.Check,  // 使用 Check 图标替代 ✓
+                                        Icons.Default.Check,
                                         contentDescription = null,
                                         tint = MaterialTheme.colorScheme.secondary,
                                         modifier = Modifier.size(20.dp)
@@ -262,45 +271,90 @@ fun AboutScreen(
 
                         Spacer(modifier = Modifier.height(8.dp))
 
-                        // 两个按钮
-                        Row(
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            OutlinedButton(
-                                onClick = { checkForUpdates() },
-                                modifier = Modifier.weight(1f),
-                                enabled = !isChecking
+                        // 根据 DPI 决定按钮布局
+                        if (isLowDpi) {
+                            // 低DPI设备：按钮垂直排列
+                            Column(
+                                verticalArrangement = Arrangement.spacedBy(8.dp),
+                                modifier = Modifier.fillMaxWidth()
                             ) {
-                                Icon(Icons.Default.Refresh, contentDescription = null)
-                                Spacer(modifier = Modifier.width(4.dp))
-                                Text("重新检查")
-                            }
+                                OutlinedButton(
+                                    onClick = { checkForUpdates() },
+                                    modifier = Modifier.fillMaxWidth(),
+                                    enabled = !isChecking
+                                ) {
+                                    Icon(Icons.Default.Refresh, contentDescription = null)
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Text("重新检查")
+                                }
 
-                            Button(
-                                onClick = {
-                                    result.latestRelease?.let { release ->
-                                        updateManager.openDownloadPage(release.tag_name)
-                                    } ?: run {
-                                        updateManager.openDownloadPage()
-                                    }
-                                },
-                                modifier = Modifier.weight(1f),
-                                enabled = result.hasUpdate && result.latestRelease != null && !isChecking,
-                                colors = ButtonDefaults.buttonColors(
-                                    containerColor = if (result.hasUpdate)
-                                        MaterialTheme.colorScheme.primary
-                                    else
-                                        MaterialTheme.colorScheme.surfaceVariant,
-                                    contentColor = if (result.hasUpdate)
-                                        MaterialTheme.colorScheme.onPrimary
-                                    else
-                                        MaterialTheme.colorScheme.onSurfaceVariant
-                                )
+                                Button(
+                                    onClick = {
+                                        result.latestRelease?.let { release ->
+                                            updateManager.openDownloadPage(release.tag_name)
+                                        } ?: run {
+                                            updateManager.openDownloadPage()
+                                        }
+                                    },
+                                    modifier = Modifier.fillMaxWidth(),
+                                    enabled = result.hasUpdate && result.latestRelease != null && !isChecking,
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = if (result.hasUpdate)
+                                            MaterialTheme.colorScheme.primary
+                                        else
+                                            MaterialTheme.colorScheme.surfaceVariant,
+                                        contentColor = if (result.hasUpdate)
+                                            MaterialTheme.colorScheme.onPrimary
+                                        else
+                                            MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                ) {
+                                    Icon(Icons.Default.Download, contentDescription = null)
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Text("下载新版本")
+                                }
+                            }
+                        } else {
+                            // 正常DPI设备：按钮水平排列
+                            Row(
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                modifier = Modifier.fillMaxWidth()
                             ) {
-                                Icon(Icons.Default.Download, contentDescription = null)
-                                Spacer(modifier = Modifier.width(4.dp))
-                                Text("下载新版本")
+                                OutlinedButton(
+                                    onClick = { checkForUpdates() },
+                                    modifier = Modifier.weight(1f),
+                                    enabled = !isChecking
+                                ) {
+                                    Icon(Icons.Default.Refresh, contentDescription = null)
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Text("重新检查")
+                                }
+
+                                Button(
+                                    onClick = {
+                                        result.latestRelease?.let { release ->
+                                            updateManager.openDownloadPage(release.tag_name)
+                                        } ?: run {
+                                            updateManager.openDownloadPage()
+                                        }
+                                    },
+                                    modifier = Modifier.weight(1f),
+                                    enabled = result.hasUpdate && result.latestRelease != null && !isChecking,
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = if (result.hasUpdate)
+                                            MaterialTheme.colorScheme.primary
+                                        else
+                                            MaterialTheme.colorScheme.surfaceVariant,
+                                        contentColor = if (result.hasUpdate)
+                                            MaterialTheme.colorScheme.onPrimary
+                                        else
+                                            MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                ) {
+                                    Icon(Icons.Default.Download, contentDescription = null)
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Text("下载新版本")
+                                }
                             }
                         }
 

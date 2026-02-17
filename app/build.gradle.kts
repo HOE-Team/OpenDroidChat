@@ -13,8 +13,8 @@ android {
         applicationId = "com.hoeteam.opendroidchat"
         minSdk = 23
         targetSdk = 36
-        versionCode = 12
-        versionName = "Beta-1.0-VerCheckUpdate"
+        versionCode = 13
+        versionName = "Beta-1.0Fix-VerCheckFix"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }

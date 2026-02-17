@@ -97,7 +97,7 @@ class UpdateChecker(private val context: Context) {
             // 检查协程是否被取消
             coroutineContext.ensureActive()
 
-            // 根据目标类型过滤版本
+            // 根据目标类型过滤版本（大小写不敏感）
             val filteredReleases = when (targetType) {
                 VersionType.NIGHTLY -> releases.filter {
                     it.tag_name.lowercase().startsWith("nightly")
@@ -106,7 +106,7 @@ class UpdateChecker(private val context: Context) {
                     it.tag_name.lowercase().startsWith("beta")
                 }
                 VersionType.STABLE -> releases.filter {
-                    it.tag_name.lowercase().startsWith("v")
+                    it.tag_name.lowercase().startsWith("stable")
                 }
             }
 

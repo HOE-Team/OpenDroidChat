@@ -6,7 +6,7 @@ import kotlinx.serialization.Serializable
 @SuppressLint("UnsafeOptInUsageError")
 @Serializable
 data class GitHubRelease(
-    val tag_name: String,           // 版本标签，如 "nightly-1.0-20260216a" 或 "beta-1.0-20260216" 或 "v1.0.0"
+    val tag_name: String,           // 版本标签，如 "nightly-1.0-20260216a" 或 "Beta-1.0" 或 "Stable-1.0" 或 "Stable-1.0Fix"
     val name: String,                // 发布名称
     val body: String,                // 发布说明
     val prerelease: Boolean,         // 是否为预发布
@@ -27,32 +27,35 @@ data class ReleaseAsset(
  */
 enum class VersionType {
     NIGHTLY,    //  nightly-前缀，日期版本
-    BETA,       //  beta-前缀，日期版本
-    STABLE;     //  v前缀，语义化版本
+    BETA,       //  Beta-前缀，主版本号
+    STABLE;     //  Stable-前缀，主版本号
 
     companion object {
         fun fromVersion(version: String): VersionType {
+            val lowerVersion = version.lowercase()
             return when {
-                version.lowercase().startsWith("nightly") -> NIGHTLY
-                version.lowercase().startsWith("Beta") -> BETA
-                version.lowercase().startsWith("Stable") -> STABLE
+                lowerVersion.startsWith("nightly") -> NIGHTLY
+                lowerVersion.startsWith("beta") -> BETA
+                lowerVersion.startsWith("stable") -> STABLE
                 else -> STABLE // 默认当作稳定版
             }
         }
 
         fun fromTag(tag: String): VersionType {
+            val lowerTag = tag.lowercase()
             return when {
-                tag.lowercase().startsWith("nightly") -> NIGHTLY
-                tag.lowercase().startsWith("beta") -> BETA
+                lowerTag.startsWith("nightly") -> NIGHTLY
+                lowerTag.startsWith("beta") -> BETA
+                lowerTag.startsWith("stable") -> STABLE
                 else -> STABLE
             }
         }
 
-        fun getTagPrefix(type: VersionType): String {
+        fun getDisplayName(type: VersionType): String {
             return when (type) {
-                VersionType.NIGHTLY -> "nightly"
-                VersionType.BETA -> "beta"
-                VersionType.STABLE -> "v"
+                VersionType.NIGHTLY -> "Nightly 测试版"
+                VersionType.BETA -> "Beta 公测版"
+                VersionType.STABLE -> "稳定版"
             }
         }
     }
@@ -76,6 +79,7 @@ data class UpdateCheckResult(
 sealed class ParsedVersion {
     abstract val fullString: String
     abstract val versionType: VersionType
+    abstract val baseVersion: String // 基础版本号（用于比较）
 
     /**
      * 比较版本，判断当前版本是否比另一个版本新
@@ -83,19 +87,26 @@ sealed class ParsedVersion {
     abstract fun isNewerThan(other: ParsedVersion): Boolean
 
     /**
-     * Nightly版本格式: nightly-1.0-20260216a (11)
+     * 判断是否为 Hotfix 版本
+     */
+    abstract val isHotfix: Boolean
+
+    /**
+     * 遵循Nightly版本格式: nightly-x.y-yyyymmddz
+     * 例如: nightly-1.0-20260216a
      */
     data class NightlyVersion(
         override val fullString: String,
         val prefix: String,              // nightly
         val versionCode: String,         // 1.0
-        val dateCode: String,            // 20260216a
-        val buildNumber: String?         // 11
+        val dateCode: String             // 20260216a
     ) : ParsedVersion() {
         override val versionType: VersionType = VersionType.NIGHTLY
+        override val baseVersion: String = "$prefix-$versionCode"
+        override val isHotfix: Boolean = false
 
         override fun isNewerThan(other: ParsedVersion): Boolean {
-            if (other !is NightlyVersion) return true // 不同类型，当前版本更新
+            if (other !is NightlyVersion) return true
 
             // 提取日期数字部分
             val thisDate = dateCode.takeWhile { it.isDigit() }.toIntOrNull() ?: 0
@@ -115,46 +126,96 @@ sealed class ParsedVersion {
     }
 
     /**
-     * Beta版本格式: beta-1.0-20260216
+     * 遵循下列Beta版本格式:
+     * - 应用内: Beta-x.y-Catalog 或 Beta-x.yFix-Catalog
+     * - GitHub标签: Beta-x.y 或 Beta-x.yFix
      */
     data class BetaVersion(
         override val fullString: String,
-        val prefix: String,              // beta
-        val versionCode: String,         // 1.0
-        val dateCode: String             // 20260216
+        val prefix: String,              // Beta
+        val versionCode: String,          // 1.0
+        override val isHotfix: Boolean,            // 是否为 Hotfix 版本
+        val hotfixSuffix: String? = null, // Fix 后缀（如果有）
+        val catalog: String?              // Catalog (可能为 null)
     ) : ParsedVersion() {
         override val versionType: VersionType = VersionType.BETA
+        override val baseVersion: String = if (isHotfix) {
+            "$prefix-$versionCode$hotfixSuffix"
+        } else {
+            "$prefix-$versionCode"
+        }
 
         override fun isNewerThan(other: ParsedVersion): Boolean {
             if (other !is BetaVersion) return true
 
-            val thisDate = dateCode.toIntOrNull() ?: 0
-            val otherDate = other.dateCode.toIntOrNull() ?: 0
-            return thisDate > otherDate
+            // 先比较基础版本号
+            val thisBase = versionCode
+            val otherBase = other.versionCode
+
+            if (thisBase != otherBase) {
+                // 比较版本号数字
+                val thisVersion = thisBase.split(".").map { it.toIntOrNull() ?: 0 }
+                val otherVersion = otherBase.split(".").map { it.toIntOrNull() ?: 0 }
+
+                for (i in 0 until minOf(thisVersion.size, otherVersion.size)) {
+                    if (thisVersion[i] > otherVersion[i]) return true
+                    if (thisVersion[i] < otherVersion[i]) return false
+                }
+            }
+
+            // 版本号相同，比较 Hotfix
+            if (isHotfix && !other.isHotfix) return true
+            if (!isHotfix && other.isHotfix) return false
+
+            // 都有或都没有 Hotfix，比较 Catalog
+            return (catalog ?: "") > (other.catalog ?: "")
         }
     }
 
     /**
-     * 稳定版本格式: v1.2.3 或 1.2.3
+     * 稳定版本格式:
+     * - 应用内: Stable-x.y-Catalog 或 Stable-x.yFix-Catalog
+     * - GitHub标签: Stable-x.y 或 Stable-x.yFix
      */
     data class StableVersion(
         override val fullString: String,
-        val major: Int,
-        val minor: Int,
-        val patch: Int
+        val prefix: String,              // Stable
+        val versionCode: String,          // 1.0
+        override val isHotfix: Boolean,            // 是否为 Hotfix 版本
+        val hotfixSuffix: String? = null, // Fix 后缀（如果有）
+        val catalog: String?              // Catalog (可能为 null)
     ) : ParsedVersion() {
         override val versionType: VersionType = VersionType.STABLE
+        override val baseVersion: String = if (isHotfix) {
+            "$prefix-$versionCode$hotfixSuffix"
+        } else {
+            "$prefix-$versionCode"
+        }
 
         override fun isNewerThan(other: ParsedVersion): Boolean {
             if (other !is StableVersion) return true
 
-            return when {
-                major > other.major -> true
-                major < other.major -> false
-                minor > other.minor -> true
-                minor < other.minor -> false
-                else -> patch > other.patch
+            // 先比较基础版本号
+            val thisBase = versionCode
+            val otherBase = other.versionCode
+
+            if (thisBase != otherBase) {
+                // 比较版本号数字
+                val thisVersion = thisBase.split(".").map { it.toIntOrNull() ?: 0 }
+                val otherVersion = otherBase.split(".").map { it.toIntOrNull() ?: 0 }
+
+                for (i in 0 until minOf(thisVersion.size, otherVersion.size)) {
+                    if (thisVersion[i] > otherVersion[i]) return true
+                    if (thisVersion[i] < otherVersion[i]) return false
+                }
             }
+
+            // 版本号相同，比较 Hotfix
+            if (isHotfix && !other.isHotfix) return true
+            if (!isHotfix && other.isHotfix) return false
+
+            // 都有或都没有 Hotfix，比较 Catalog
+            return (catalog ?: "") > (other.catalog ?: "")
         }
     }
 }
@@ -168,24 +229,11 @@ object VersionParser {
         // 移除可能的 "Version " 前缀
         val cleanVersion = versionString.removePrefix("Version ").trim()
 
-        // 尝试匹配 Nightly 版本: nightly-1.0-20260216a (11)
-        val nightlyRegex = """^([nN]ightly)-(\d+\.\d+)-(\d+[a-zA-Z]?)(?:\s*\((\d+)\))?$""".toRegex()
+        // 尝试匹配 Nightly 版本: nightly-x.y-yyyymmddz (大小写不敏感)
+        val nightlyRegex = """^(?i)(nightly)-(\d+\.\d+)-(\d+[a-zA-Z]?)$""".toRegex()
         nightlyRegex.find(cleanVersion)?.let {
-            val (prefix, versionCode, dateCode, buildNumber) = it.destructured
-            return ParsedVersion.NightlyVersion(
-                fullString = versionString,
-                prefix = prefix,
-                versionCode = versionCode,
-                dateCode = dateCode,
-                buildNumber = buildNumber.ifBlank { null }
-            )
-        }
-
-        // 尝试匹配 Beta 版本: beta-1.0-20260216
-        val betaRegex = """^([bB]eta)-(\d+\.\d+)-(\d+)$""".toRegex()
-        betaRegex.find(cleanVersion)?.let {
             val (prefix, versionCode, dateCode) = it.destructured
-            return ParsedVersion.BetaVersion(
+            return ParsedVersion.NightlyVersion(
                 fullString = versionString,
                 prefix = prefix,
                 versionCode = versionCode,
@@ -193,15 +241,67 @@ object VersionParser {
             )
         }
 
-        // 尝试匹配稳定版本: v1.2.3 或 1.2.3
-        val stableRegex = """^v?(\d+)\.(\d+)\.(\d+)$""".toRegex()
-        stableRegex.find(cleanVersion)?.let {
-            val (major, minor, patch) = it.destructured
+        // 尝试匹配 Beta 版本（带 Catalog）- 应用内版本
+        // 格式: Beta-x.y-Catalog 或 Beta-x.yFix-Catalog
+        val betaWithCatalogRegex = """^(?i)(beta)-(\d+\.\d+)(Fix)?-([a-zA-Z0-9]+)$""".toRegex()
+        betaWithCatalogRegex.find(cleanVersion)?.let {
+            val (prefix, versionCode, fixSuffix, catalog) = it.destructured
+            val isHotfix = fixSuffix.equals("Fix", ignoreCase = true)
+            return ParsedVersion.BetaVersion(
+                fullString = versionString,
+                prefix = prefix,
+                versionCode = versionCode,
+                isHotfix = isHotfix,
+                hotfixSuffix = if (isHotfix) fixSuffix else null,
+                catalog = catalog
+            )
+        }
+
+        // 尝试匹配 Beta 版本（不带 Catalog）- GitHub 标签
+        // 格式: Beta-x.y 或 Beta-x.yFix
+        val betaRegex = """^(?i)(beta)-(\d+\.\d+)(Fix)?$""".toRegex()
+        betaRegex.find(cleanVersion)?.let {
+            val (prefix, versionCode, fixSuffix) = it.destructured
+            val isHotfix = fixSuffix.equals("Fix", ignoreCase = true)
+            return ParsedVersion.BetaVersion(
+                fullString = versionString,
+                prefix = prefix,
+                versionCode = versionCode,
+                isHotfix = isHotfix,
+                hotfixSuffix = if (isHotfix) fixSuffix else null,
+                catalog = null
+            )
+        }
+
+        // 尝试匹配 Stable 版本（带 Catalog）- 应用内版本
+        // 格式: Stable-x.y-Catalog 或 Stable-x.yFix-Catalog
+        val stableWithCatalogRegex = """^(?i)(stable)-(\d+\.\d+)(Fix)?-([a-zA-Z0-9]+)$""".toRegex()
+        stableWithCatalogRegex.find(cleanVersion)?.let {
+            val (prefix, versionCode, fixSuffix, catalog) = it.destructured
+            val isHotfix = fixSuffix.equals("Fix", ignoreCase = true)
             return ParsedVersion.StableVersion(
                 fullString = versionString,
-                major = major.toInt(),
-                minor = minor.toInt(),
-                patch = patch.toInt()
+                prefix = prefix,
+                versionCode = versionCode,
+                isHotfix = isHotfix,
+                hotfixSuffix = if (isHotfix) fixSuffix else null,
+                catalog = catalog
+            )
+        }
+
+        // 尝试匹配 Stable 版本（不带 Catalog）- GitHub 标签
+        // 格式: Stable-x.y 或 Stable-x.yFix
+        val stableRegex = """^(?i)(stable)-(\d+\.\d+)(Fix)?$""".toRegex()
+        stableRegex.find(cleanVersion)?.let {
+            val (prefix, versionCode, fixSuffix) = it.destructured
+            val isHotfix = fixSuffix.equals("Fix", ignoreCase = true)
+            return ParsedVersion.StableVersion(
+                fullString = versionString,
+                prefix = prefix,
+                versionCode = versionCode,
+                isHotfix = isHotfix,
+                hotfixSuffix = if (isHotfix) fixSuffix else null,
+                catalog = null
             )
         }
 
