@@ -25,11 +25,17 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.hoeteam.opendroidchat.data.UpdateManager
+import com.hoeteam.opendroidchat.network.VersionType
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -39,6 +45,19 @@ fun SettingsScreen(
     onNavigateToAbout: () -> Unit, // 导航到 AboutScreen 的回调
     onNavigateToChat: () -> Unit,
 ) {
+    val context = LocalContext.current
+    val updateManager = remember { UpdateManager(context) }
+    val currentVersionType by remember { mutableStateOf(updateManager.getCurrentVersionType()) }
+
+    // 根据版本类型获取警告文本
+    fun getWarningText(): String? {
+        return when (currentVersionType) {
+            VersionType.NIGHTLY -> "技术预览版本(Nightly)，极不稳定，可能导致数据丢失或发生意料之外的崩溃。"
+            VersionType.BETA -> "发布前测试版本(Beta)，不稳定，可能导致数据丢失。"
+            VersionType.STABLE -> null
+        }
+    }
+
     // 顶级 Column 作为容器
     Column(
         modifier = Modifier.fillMaxSize()
@@ -58,36 +77,38 @@ fun SettingsScreen(
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            Card(
-                // FIX: 应用水平填充 (16.dp)，使其不再紧贴屏幕边缘
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp)
-            ) {
-                Column(
+            // 根据版本类型决定是否显示警告卡片
+            val warningText = getWarningText()
+            if (warningText != null) {
+                Card(
                     modifier = Modifier
-                        // Card 内部的背景色和内容填充保持不变
-                        .background(MaterialTheme.colorScheme.errorContainer)
                         .fillMaxWidth()
-                        .padding(16.dp) // 内部内容填充
+                        .padding(horizontal = 16.dp)
                 ) {
-                    // 第一排：图标
-                    Icon(
-                        Icons.Filled.Warning,
-                        contentDescription = "警告",
-                        tint = MaterialTheme.colorScheme.onErrorContainer
-                    )
-                    Spacer(modifier = Modifier.height(8.dp)) // 间隔
-                    // 第二排：显示“text文本”
-                    Text(
-                        text = "发布前测试版本(Nightly)，不稳定，可能导致数据丢失。",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onErrorContainer
-                    )
+                    Column(
+                        modifier = Modifier
+                            .background(MaterialTheme.colorScheme.errorContainer)
+                            .fillMaxWidth()
+                            .padding(16.dp)
+                    ) {
+                        // 第一排：图标
+                        Icon(
+                            Icons.Filled.Warning,
+                            contentDescription = "警告",
+                            tint = MaterialTheme.colorScheme.onErrorContainer
+                        )
+                        Spacer(modifier = Modifier.height(8.dp)) // 间隔
+                        // 第二排：显示警告文本
+                        Text(
+                            text = warningText,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onErrorContainer
+                        )
+                    }
                 }
             }
-            // --- 2. Padded ListItems Group (用于对齐 ListItem) ---
-            // ListItems 所在的 Column 仍然需要水平填充来对齐其内容
+
+            // --- Padded ListItems Group (用于对齐 ListItem) ---
             Column(modifier = Modifier.padding(horizontal = 16.dp)) {
 
                 // 2. 主题切换项 (ListItem)
@@ -107,7 +128,6 @@ fun SettingsScreen(
                             enabled = true
                         )
                     },
-                    // ListItem 默认背景色与父容器颜色保持一致即可，不需要额外设置
                     modifier = Modifier.fillMaxWidth()
                 )
 
