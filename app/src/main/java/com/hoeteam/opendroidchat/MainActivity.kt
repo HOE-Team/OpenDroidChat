@@ -35,6 +35,7 @@ import com.hoeteam.opendroidchat.ui.ModelEditScreen
 import com.hoeteam.opendroidchat.ui.ModelSettingsScreen
 import com.hoeteam.opendroidchat.ui.SettingsScreen
 import com.hoeteam.opendroidchat.ui.AboutScreen
+import com.hoeteam.opendroidchat.ui.LicenseScreen  // 新增导入
 // 请根据您的主题文件 (ui.theme/Theme.kt) 中定义的函数名修改此处的引用
 import com.hoeteam.opendroidchat.ui.theme.OpenDroidChatTheme
 import com.hoeteam.opendroidchat.viewmodel.ChatViewModel
@@ -49,17 +50,16 @@ class MainActivity : ComponentActivity() {
             // 初始化主题 ViewModel
             val themeViewModel: ThemeViewModel = viewModel(factory = ThemeViewModelFactory(this@MainActivity))
             val isDarkTheme by themeViewModel.darkThemeEnabled.collectAsState()
-            
+
             // 根据存储的主题设置来应用主题
             OpenDroidChatTheme(darkTheme = isDarkTheme) {
                 Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
                     MainNavigation(themeViewModel)
                 }
-                }
             }
         }
     }
-
+}
 
 // ------------------- Navigation Destinations -------------------
 
@@ -69,6 +69,7 @@ object Destinations {
     const val MODEL_EDIT = "edit_model/{modelId}"
     const val SETTINGS_SCREEN = "app_settings"
     const val ABOUT_SCREEN = "about_app"
+    const val LICENSE_SCREEN = "license_screen"  // 新增：开源许可界面
     const val ARG_MODEL_ID = "modelId"
 }
 
@@ -184,7 +185,7 @@ fun MainNavigation(themeViewModel: ThemeViewModel) {
             // 4. 应用程序设置界面
             composable(Destinations.SETTINGS_SCREEN) {
                 val isDarkTheme by themeViewModel.darkThemeEnabled.collectAsState()
-                
+
                 SettingsScreen(
                     // 传入主题状态和切换回调
                     currentDarkTheme = isDarkTheme,
@@ -194,10 +195,18 @@ fun MainNavigation(themeViewModel: ThemeViewModel) {
                 )
             }
 
-            // 5. 新增：关于程序界面
+            // 5. 关于程序界面（修改：添加导航到开源许可的回调）
             composable(Destinations.ABOUT_SCREEN) {
                 AboutScreen(
-                    onBack = { navController.popBackStack() } // 返回到 SettingsScreen
+                    onBack = { navController.popBackStack() }, // 返回到 SettingsScreen
+                    onNavigateToLicense = { navController.navigate(Destinations.LICENSE_SCREEN) } // 新增：导航到开源许可界面
+                )
+            }
+
+            // 6. 新增：开源许可界面
+            composable(Destinations.LICENSE_SCREEN) {
+                LicenseScreen(
+                    onBack = { navController.popBackStack() } // 返回到 AboutScreen
                 )
             }
         }

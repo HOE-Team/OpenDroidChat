@@ -1,11 +1,13 @@
 // AboutScreen.kt
 package com.hoeteam.opendroidchat.ui
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Error
@@ -15,10 +17,8 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.hoeteam.opendroidchat.data.UpdateManager
 import com.hoeteam.opendroidchat.network.UpdateCheckResult
@@ -29,18 +29,12 @@ import kotlinx.coroutines.*
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AboutScreen(
-    onBack: () -> Unit
+    onBack: () -> Unit,
+    onNavigateToLicense: () -> Unit  // 新增导航回调
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val updateManager = remember { UpdateManager(context) }
-
-    // 获取屏幕配置
-    val configuration = LocalConfiguration.current
-    // 计算屏幕密度独立像素宽度 (dp)
-    val screenWidthDp = configuration.screenWidthDp.dp
-    // 判断是否为低DPI设备（宽度小于360dp的设备通常被认为是低DPI或小屏幕设备）
-    val isLowDpi = screenWidthDp < 360.dp
 
     // 当前版本
     val currentVersion by remember { mutableStateOf(updateManager.getCurrentVersion()) }
@@ -271,90 +265,44 @@ fun AboutScreen(
 
                         Spacer(modifier = Modifier.height(8.dp))
 
-                        // 根据 DPI 决定按钮布局
-                        if (isLowDpi) {
-                            // 低DPI设备：按钮垂直排列
-                            Column(
-                                verticalArrangement = Arrangement.spacedBy(8.dp),
-                                modifier = Modifier.fillMaxWidth()
+                        Column(
+                            verticalArrangement = Arrangement.spacedBy(8.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            OutlinedButton(
+                                onClick = { checkForUpdates() },
+                                modifier = Modifier.fillMaxWidth(),
+                                enabled = !isChecking
                             ) {
-                                OutlinedButton(
-                                    onClick = { checkForUpdates() },
-                                    modifier = Modifier.fillMaxWidth(),
-                                    enabled = !isChecking
-                                ) {
-                                    Icon(Icons.Default.Refresh, contentDescription = null)
-                                    Spacer(modifier = Modifier.width(4.dp))
-                                    Text("重新检查")
-                                }
-
-                                Button(
-                                    onClick = {
-                                        result.latestRelease?.let { release ->
-                                            updateManager.openDownloadPage(release.tag_name)
-                                        } ?: run {
-                                            updateManager.openDownloadPage()
-                                        }
-                                    },
-                                    modifier = Modifier.fillMaxWidth(),
-                                    enabled = result.hasUpdate && result.latestRelease != null && !isChecking,
-                                    colors = ButtonDefaults.buttonColors(
-                                        containerColor = if (result.hasUpdate)
-                                            MaterialTheme.colorScheme.primary
-                                        else
-                                            MaterialTheme.colorScheme.surfaceVariant,
-                                        contentColor = if (result.hasUpdate)
-                                            MaterialTheme.colorScheme.onPrimary
-                                        else
-                                            MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                ) {
-                                    Icon(Icons.Default.Download, contentDescription = null)
-                                    Spacer(modifier = Modifier.width(4.dp))
-                                    Text("下载新版本")
-                                }
+                                Icon(Icons.Default.Refresh, contentDescription = null)
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text("重新检查")
                             }
-                        } else {
-                            // 正常DPI设备：按钮水平排列
-                            Row(
-                                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                modifier = Modifier.fillMaxWidth()
-                            ) {
-                                OutlinedButton(
-                                    onClick = { checkForUpdates() },
-                                    modifier = Modifier.weight(1f),
-                                    enabled = !isChecking
-                                ) {
-                                    Icon(Icons.Default.Refresh, contentDescription = null)
-                                    Spacer(modifier = Modifier.width(4.dp))
-                                    Text("重新检查")
-                                }
 
-                                Button(
-                                    onClick = {
-                                        result.latestRelease?.let { release ->
-                                            updateManager.openDownloadPage(release.tag_name)
-                                        } ?: run {
-                                            updateManager.openDownloadPage()
-                                        }
-                                    },
-                                    modifier = Modifier.weight(1f),
-                                    enabled = result.hasUpdate && result.latestRelease != null && !isChecking,
-                                    colors = ButtonDefaults.buttonColors(
-                                        containerColor = if (result.hasUpdate)
-                                            MaterialTheme.colorScheme.primary
-                                        else
-                                            MaterialTheme.colorScheme.surfaceVariant,
-                                        contentColor = if (result.hasUpdate)
-                                            MaterialTheme.colorScheme.onPrimary
-                                        else
-                                            MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                ) {
-                                    Icon(Icons.Default.Download, contentDescription = null)
-                                    Spacer(modifier = Modifier.width(4.dp))
-                                    Text("下载新版本")
-                                }
+                            Button(
+                                onClick = {
+                                    result.latestRelease?.let { release ->
+                                        updateManager.openDownloadPage(release.tag_name)
+                                    } ?: run {
+                                        updateManager.openDownloadPage()
+                                    }
+                                },
+                                modifier = Modifier.fillMaxWidth(),
+                                enabled = result.hasUpdate && result.latestRelease != null && !isChecking,
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = if (result.hasUpdate)
+                                        MaterialTheme.colorScheme.primary
+                                    else
+                                        MaterialTheme.colorScheme.surfaceVariant,
+                                    contentColor = if (result.hasUpdate)
+                                        MaterialTheme.colorScheme.onPrimary
+                                    else
+                                        MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            ) {
+                                Icon(Icons.Default.Download, contentDescription = null)
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text("下载新版本")
                             }
                         }
 
@@ -372,7 +320,34 @@ fun AboutScreen(
             }
         }
 
-        // 3. 版权信息卡片
+        // 3. 开源许可卡片（新增）
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 16.dp)
+                .clickable { onNavigateToLicense() }
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "开放源代码许可",
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Icon(
+                    Icons.AutoMirrored.Filled.ArrowForward,
+                    contentDescription = "查看开源许可",
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+
+        // 4. 版权信息卡片
         Card(
             modifier = Modifier.fillMaxWidth()
         ) {
