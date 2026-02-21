@@ -1,5 +1,11 @@
 package com.hoeteam.opendroidchat.ui
 
+import android.content.ClipData
+import android.content.ClipboardManager
+import android.content.Context
+import android.util.TypedValue
+import android.widget.TextView
+import android.widget.Toast
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -11,14 +17,15 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Send
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.ContentCopy
+import androidx.compose.material.icons.filled.DoneAll
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
-import android.util.TypedValue
-import android.widget.TextView
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
@@ -35,6 +42,7 @@ import com.hoeteam.opendroidchat.viewmodel.ChatViewModelFactory
 import io.noties.markwon.AbstractMarkwonPlugin
 import io.noties.markwon.Markwon
 import io.noties.markwon.core.MarkwonTheme
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 // --- 主聊天屏幕 ---
@@ -43,7 +51,6 @@ import kotlinx.coroutines.launch
 fun ChatScreen(
     viewModel: ChatViewModel = viewModel(factory = ChatViewModelFactory(LocalContext.current)),
     onNavigateToSettings: () -> Unit,
-    // FIX 1: 新增导航到模型设置的回调
     onNavigateToModelSettings: () -> Unit
 ) {
     val currentModel by viewModel.currentModel.collectAsState()
@@ -64,7 +71,6 @@ fun ChatScreen(
     }
 
     if (currentModel == null) {
-        // FIX 2: 切换到 ModelSettings 导航回调
         EmptyConfigScreen(onNavigateToModelSettings)
         return
     }
@@ -117,7 +123,6 @@ fun ChatScreen(
 
 // ------------------- 子组件 -------------------
 @Composable
-// FIX 3: 接收新的导航回调
 fun EmptyConfigScreen(onNavigateToModelSettings: () -> Unit) {
     Column(
         modifier = Modifier
@@ -132,7 +137,6 @@ fun EmptyConfigScreen(onNavigateToModelSettings: () -> Unit) {
         )
         Spacer(Modifier.height(16.dp))
         Button(
-            // FIX 4: 按钮点击事件更改为跳转到 ModelSettings
             onClick = onNavigateToModelSettings,
             contentPadding = PaddingValues(horizontal = 24.dp, vertical = 12.dp)
         ) {
@@ -141,9 +145,26 @@ fun EmptyConfigScreen(onNavigateToModelSettings: () -> Unit) {
     }
 }
 
+// 复制状态枚举
+enum class CopyState {
+    Idle,      // 未复制
+    Copied     // 已复制
+}
+
+// 复制到剪贴板的辅助函数
+private fun copyToClipboard(context: Context, text: String) {
+    val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+    val clip = ClipData.newPlainText("聊天内容", text)
+    clipboard.setPrimaryClip(clip)
+    Toast.makeText(context, "已复制到剪贴板", Toast.LENGTH_SHORT).show()
+}
+
 @Composable
 fun MessageBubble(message: Message) {
-// ... (MessageBubble 内容保持不变)
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    var copyState by remember { mutableStateOf(CopyState.Idle) }
+
     val isUser = message.sender == Sender.USER
     val bubbleColor = when {
         isUser -> MaterialTheme.colorScheme.primary
@@ -162,33 +183,69 @@ fun MessageBubble(message: Message) {
         bottomStart = if (!isUser) CornerSize(4.dp) else CornerSize(cornerSize)
     )
 
-    Row(
+    // 使用 Box 来整体控制对齐
+    Box(
         modifier = Modifier
             .fillMaxWidth()
             .padding(
                 start = if (isUser) 60.dp else 8.dp,
                 end = if (isUser) 8.dp else 60.dp
             ),
-        horizontalArrangement = if (isUser) Arrangement.End else Arrangement.Start
+        contentAlignment = if (isUser) Alignment.TopEnd else Alignment.TopStart
     ) {
-        Surface(
-            color = bubbleColor,
-            shape = bubbleShape,
-            tonalElevation = 1.dp
+        Column(
+            horizontalAlignment = if (isUser) Alignment.End else Alignment.Start
         ) {
-            if (isUser) {
-                Text(
-                    text = message.text,
-                    color = textColor,
-                    modifier = Modifier.padding(10.dp),
-                    style = MaterialTheme.typography.bodyLarge
-                )
-            } else {
-                HybridMarkdown(
-                    text = message.text,
-                    modifier = Modifier.padding(10.dp),
-                    normalTextColor = textColor
-                )
+            // 消息气泡
+            Surface(
+                color = bubbleColor,
+                shape = bubbleShape,
+                tonalElevation = 1.dp
+            ) {
+                if (isUser) {
+                    Text(
+                        text = message.text,
+                        color = textColor,
+                        modifier = Modifier.padding(10.dp),
+                        style = MaterialTheme.typography.bodyLarge
+                    )
+                } else {
+                    HybridMarkdown(
+                        text = message.text,
+                        modifier = Modifier.padding(10.dp),
+                        normalTextColor = textColor
+                    )
+                }
+            }
+
+            // 复制按钮 - 放在消息下方，与消息气泡对齐
+            Row(
+                modifier = Modifier
+                    .padding(top = 4.dp)
+                    .widthIn(min = 32.dp),
+                horizontalArrangement = if (isUser) Arrangement.End else Arrangement.Start
+            ) {
+                IconButton(
+                    onClick = {
+                        scope.launch {
+                            copyToClipboard(context, message.text)
+                            copyState = CopyState.Copied
+                            delay(2000)
+                            copyState = CopyState.Idle
+                        }
+                    },
+                    modifier = Modifier.size(32.dp)
+                ) {
+                    Icon(
+                        imageVector = when (copyState) {
+                            CopyState.Idle -> Icons.Default.ContentCopy
+                            CopyState.Copied -> Icons.Default.DoneAll
+                        },
+                        contentDescription = if (copyState == CopyState.Idle) "复制内容" else "已复制",
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(18.dp)
+                    )
+                }
             }
         }
     }
@@ -197,7 +254,6 @@ fun MessageBubble(message: Message) {
 // ------------------- 混合 Markdown 渲染 -------------------
 @Composable
 fun HybridMarkdown(
-// ... (HybridMarkdown 内容保持不变)
     text: String,
     modifier: Modifier = Modifier,
     normalTextColor: Color = MaterialTheme.colorScheme.onSurface
@@ -282,7 +338,6 @@ fun HybridMarkdown(
     }
 }
 
-
 // ------------------- 主题感知 Markdown 渲染 -------------------
 @Composable
 fun ThemedMarkdownText(
@@ -331,7 +386,6 @@ fun ThemedMarkdownText(
 // ------------------- 输入框 -------------------
 @Composable
 fun ChatInput(
-// ... (ChatInput 内容保持不变)
     text: String,
     onTextChange: (String) -> Unit,
     onSend: () -> Unit,
