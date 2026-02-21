@@ -23,48 +23,46 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
+      - name: Set date environment variable
+        run: echo "NIGHTLY_DATE=$(date +'%y%m%d')" >> $GITHUB_ENV
+
       - name: Modify build.gradle.kts with awk
         run: |
-          NIGHTLY_DATE=$(date +'%y%m%d')
-          echo "Nightly version code: $NIGHTLY_DATE"
-
-          awk -v date="$NIGHTLY_DATE" '
-            /applicationId = / {
-              match($0, /applicationId = "([^"]+)"/, arr)
-              if (arr[1] != "") {
-                gsub(/"[^"]+"/, "\"" arr[1] ".nightly\"")
-              }
-              print
-              next
+          echo "Nightly version code: ${{ env.NIGHTLY_DATE }}"
+          
+          awk -v date="${{ env.NIGHTLY_DATE }}" '
+            /applicationId = / { 
+              split($0, a, "\"")
+              print "    applicationId = \"" a[2] ".nightly\""
+              next 
             }
-            /versionCode = / {
+            /versionCode = / { 
               print "    versionCode = " date
-              next
+              next 
             }
             {print}
-          ' app/build.gradle.kts > app/build.gradle.kts.tmp
-          
-          mv app/build.gradle.kts.tmp app/build.gradle.kts
+          ' app/build.gradle.kts > app/build.gradle.kts.tmp && mv app/build.gradle.kts.tmp app/build.gradle.kts
           
           echo "=== Modified build.gradle.kts ==="
           cat app/build.gradle.kts
 
-      - name: Build debug APK with modified config
+      - name: Build debug APK
         run: ./gradlew assembleDebug
 
-      - name: Rename APK with date
+      - name: Prepare APK for upload
         run: |
-          NIGHTLY_DATE=$(date +'%y%m%d')
-          mkdir -p app/build/outputs/apk/debug
-          if [ -f app/build/outputs/apk/debug/app-debug.apk ]; then
-            mv app/build/outputs/apk/debug/app-debug.apk app/build/outputs/apk/debug/app-nightly-$NIGHTLY_DATE.apk
-          else
-            echo "Warning: app-debug.apk not found, checking for other APKs"
-            find app/build/outputs/apk/debug -name "*.apk" -exec mv {} app/build/outputs/apk/debug/app-nightly-$NIGHTLY_DATE.apk \;
-          fi
+          cd app/build/outputs/apk/debug
+          # 重命名 APK
+          for apk in *.apk; do
+            if [ -f "$apk" ]; then
+              mv "$apk" "app-nightly-${{ env.NIGHTLY_DATE }}.apk"
+              echo "APK ready: app-nightly-${{ env.NIGHTLY_DATE }}.apk"
+            fi
+          done
 
       - name: Upload APK to Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: nightly-apk-${{ github.sha }}-$(date +'%y%m%d')
+          name: nightly-apk-${{ github.sha }}-${{ env.NIGHTLY_DATE }}
           path: app/build/outputs/apk/debug/*.apk
+          retention-days: 30
