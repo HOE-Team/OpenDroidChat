@@ -2,7 +2,7 @@ name: Nightly Android Build
 
 on:
   schedule:
-    - cron: '0 0 * * *'
+    - cron: '0 15 * * *'
   workflow_dispatch:
 
 jobs:
@@ -26,7 +26,7 @@ jobs:
       - name: Set date environment variable
         run: echo "NIGHTLY_DATE=$(date +'%y%m%d')" >> $GITHUB_ENV
 
-      - name: Modify build.gradle.kts with awk
+      - name: Modify build.gradle.kts
         run: |
           echo "Nightly version code: ${{ env.NIGHTLY_DATE }}"
           
@@ -49,20 +49,28 @@ jobs:
       - name: Build debug APK
         run: ./gradlew assembleDebug
 
-      - name: Prepare APK for upload
+      - name: Prepare APK for direct upload
         run: |
-          cd app/build/outputs/apk/debug
-          # 重命名 APK
-          for apk in *.apk; do
-            if [ -f "$apk" ]; then
-              mv "$apk" "app-nightly-${{ env.NIGHTLY_DATE }}.apk"
-              echo "APK ready: app-nightly-${{ env.NIGHTLY_DATE }}.apk"
-            fi
-          done
+          NIGHTLY_DATE=${{ env.NIGHTLY_DATE }}
+          mkdir -p app/artifacts
 
-      - name: Upload APK to Artifact
+          APK_FILE=$(find app/build/outputs/apk -name "*.apk" -type f | head -1)
+          
+          if [ -z "$APK_FILE" ]; then
+            echo "[FAIL] No APK file found!"
+            exit 1
+          fi
+
+          cp "$APK_FILE" "app/artifacts/app-nightly-${NIGHTLY_DATE}.apk"
+          
+          echo "[SUCCESS] APK ready: app/artifacts/app-nightly-${NIGHTLY_DATE}.apk"
+          ls -la app/artifacts/
+
+      - name: Upload APK (no zip)
         uses: actions/upload-artifact@v4
         with:
-          name: nightly-apk-${{ github.sha }}-${{ env.NIGHTLY_DATE }}
-          path: app/build/outputs/apk/debug/*.apk
+          name: app-nightly-${{ env.NIGHTLY_DATE }}.apk
+          path: app/artifacts/app-nightly-${{ env.NIGHTLY_DATE }}.apk
           retention-days: 30
+          if-no-files-found: error
+          compression-level: 0
