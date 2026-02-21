@@ -23,13 +23,28 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
-      - name: Modify build.gradle.kts in workspace (cache only)
+      - name: Modify build.gradle.kts with awk
         run: |
           NIGHTLY_DATE=$(date +'%y%m%d')
           echo "Nightly version code: $NIGHTLY_DATE"
+
+          awk -v date="$NIGHTLY_DATE" '
+            /applicationId = / {
+              match($0, /applicationId = "([^"]+)"/, arr)
+              if (arr[1] != "") {
+                gsub(/"[^"]+"/, "\"" arr[1] ".nightly\"")
+              }
+              print
+              next
+            }
+            /versionCode = / {
+              print "    versionCode = " date
+              next
+            }
+            {print}
+          ' app/build.gradle.kts > app/build.gradle.kts.tmp
           
-          sed -i "s/applicationId = \".*\"/applicationId = \"&.nightly\"/" app/build.gradle.kts
-          sed -i "s/versionCode = .*/versionCode = $NIGHTLY_DATE/" app/build.gradle.kts
+          mv app/build.gradle.kts.tmp app/build.gradle.kts
           
           echo "=== Modified build.gradle.kts ==="
           cat app/build.gradle.kts
@@ -40,7 +55,13 @@ jobs:
       - name: Rename APK with date
         run: |
           NIGHTLY_DATE=$(date +'%y%m%d')
-          mv app/build/outputs/apk/debug/app-debug.apk app/build/outputs/apk/debug/app-nightly-$NIGHTLY_DATE.apk
+          mkdir -p app/build/outputs/apk/debug
+          if [ -f app/build/outputs/apk/debug/app-debug.apk ]; then
+            mv app/build/outputs/apk/debug/app-debug.apk app/build/outputs/apk/debug/app-nightly-$NIGHTLY_DATE.apk
+          else
+            echo "Warning: app-debug.apk not found, checking for other APKs"
+            find app/build/outputs/apk/debug -name "*.apk" -exec mv {} app/build/outputs/apk/debug/app-nightly-$NIGHTLY_DATE.apk \;
+          fi
 
       - name: Upload APK to Artifact
         uses: actions/upload-artifact@v4
