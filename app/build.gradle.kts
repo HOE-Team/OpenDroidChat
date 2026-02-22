@@ -24,10 +24,21 @@ android {
 
     signingConfigs {
         create("release") {
-            // 尝试从 keystore.properties 文件读取签名配置
+            val isReleaseBuild = gradle.startParameter.taskNames.any {
+                it.contains("release", ignoreCase = true)
+            }
+
+            // 如果是 debug 构建，直接跳过 release 签名配置
+            if (!isReleaseBuild) {
+                println("[INFO] Debug build detected, skipping release signing configuration")
+                return@create
+            }
+
+            // 只有 release 构建才需要配置签名
             val keystorePropertiesFile = rootProject.file("keystore.properties")
+
             if (keystorePropertiesFile.exists()) {
-                println("Found keystore.properties, using it for release signing")
+                println("[INFO] Found keystore.properties, using it for release signing")
                 val keystoreProperties = Properties()
                 keystoreProperties.load(keystorePropertiesFile.inputStream())
 
@@ -36,60 +47,19 @@ android {
                 val keyAliasProp = keystoreProperties.getProperty("keyAlias")
                 val keyPasswordProp = keystoreProperties.getProperty("keyPassword")
 
-                if (storeFileProp != null) {
-                    storeFile = file(storeFileProp)
-                } else {
-                    throw GradleException("Keystore file path not found in keystore.properties")
-                }
-
-                if (storePasswordProp != null) {
-                    storePassword = storePasswordProp
-                } else {
-                    throw GradleException("Store password not found in keystore.properties")
-                }
-
-                if (keyAliasProp != null) {
-                    keyAlias = keyAliasProp
-                } else {
-                    throw GradleException("Key alias not found in keystore.properties")
-                }
-
-                if (keyPasswordProp != null) {
-                    keyPassword = keyPasswordProp
-                } else {
-                    throw GradleException("Key password not found in keystore.properties")
-                }
+                storeFile = file(storeFileProp ?: error("Keystore file path not found in keystore.properties"))
+                storePassword = storePasswordProp ?: error("Store password not found in keystore.properties")
+                keyAlias = keyAliasProp ?: error("Key alias not found in keystore.properties")
+                keyPassword = keyPasswordProp ?: error("Key password not found in keystore.properties")
             } else {
-                // 如果 keystore.properties 不存在，则从 gradle.properties 读取（用于调试）
-                println("keystore.properties not found, falling back to gradle.properties")
-                val storeFileProp = project.findProperty("STORE_FILE") as String?
-                val storePasswordProp = project.findProperty("STORE_PASSWORD") as String?
-                val keyAliasProp = project.findProperty("KEY_ALIAS") as String?
-                val keyPasswordProp = project.findProperty("KEY_PASSWORD") as String?
-
-                if (storeFileProp != null) {
-                    storeFile = file(storeFileProp)
-                } else {
-                    throw GradleException("STORE_FILE not found in gradle.properties")
-                }
-
-                if (storePasswordProp != null) {
-                    storePassword = storePasswordProp
-                } else {
-                    throw GradleException("STORE_PASSWORD not found in gradle.properties")
-                }
-
-                if (keyAliasProp != null) {
-                    keyAlias = keyAliasProp
-                } else {
-                    throw GradleException("KEY_ALIAS not found in gradle.properties")
-                }
-
-                if (keyPasswordProp != null) {
-                    keyPassword = keyPasswordProp
-                } else {
-                    throw GradleException("KEY_PASSWORD not found in gradle.properties")
-                }
+                println("""
+                    |
+                    |⚠️  keystore.properties not found for release build
+                    |🔧 Using debug signing key for release (not recommended for production)
+                    |📖 To configure release signing, see CONTRIBUTING.md
+                    |
+                """.trimIndent())
+                // 不配置 signingConfig，让 release 构建使用 debug 签名
             }
         }
     }
@@ -101,11 +71,11 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
-            signingConfig = signingConfigs.getByName("release")
+            // 如果 release signing 有配置就用，没有就用 debug 签名
+            signingConfig = signingConfigs.findByName("release") ?: signingConfigs.getByName("debug")
         }
 
         debug {
-            // debug 版本使用默认的调试签名
             isDebuggable = true
         }
     }
