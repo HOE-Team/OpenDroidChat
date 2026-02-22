@@ -8,6 +8,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
+import androidx.compose.material.icons.filled.Build
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Error
@@ -30,7 +31,7 @@ import kotlinx.coroutines.*
 @Composable
 fun AboutScreen(
     onBack: () -> Unit,
-    onNavigateToLicense: () -> Unit  // 新增导航回调
+    onNavigateToLicense: () -> Unit
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -84,9 +85,9 @@ fun AboutScreen(
         }
     }
 
-    // 自动检查更新
+    // 自动检查更新（非Nightly版本自动检查，Nightly版本不自动检查）
     LaunchedEffect(Unit) {
-        if (updateResult == null) {
+        if (currentVersionType != VersionType.NIGHTLY && updateResult == null) {
             checkForUpdates()
         }
     }
@@ -101,7 +102,7 @@ fun AboutScreen(
     // 获取版本类型显示文本
     fun getVersionTypeText(): String {
         return when (currentVersionType) {
-            VersionType.NIGHTLY -> "Nightly 测试版"
+            VersionType.NIGHTLY -> "Nightly 每夜构建版"
             VersionType.BETA -> "Beta 公测版"
             VersionType.STABLE -> "稳定版"
         }
@@ -185,8 +186,59 @@ fun AboutScreen(
 
                 Spacer(modifier = Modifier.height(12.dp))
 
-                // 更新检查区域
+                // 更新检查区域 - 根据版本类型显示不同内容
                 when {
+                    // Nightly版本特殊处理
+                    currentVersionType == VersionType.NIGHTLY -> {
+                        Text(
+                            text = "Nightly版本通过GitHub Actions自动构建",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.padding(bottom = 8.dp)
+                        )
+
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        // 直接显示查看Actions按钮
+                        Column(
+                            verticalArrangement = Arrangement.spacedBy(8.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Button(
+                                onClick = { updateManager.openActionsPage() },
+                                modifier = Modifier.fillMaxWidth(),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = MaterialTheme.colorScheme.primary,
+                                    contentColor = MaterialTheme.colorScheme.onPrimary
+                                )
+                            ) {
+                                Icon(Icons.Default.Build, contentDescription = null)
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text("查看Actions构建")
+                            }
+
+                            OutlinedButton(
+                                onClick = { checkForUpdates() },
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Icon(Icons.Default.Refresh, contentDescription = null)
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text("检查更新")
+                            }
+                        }
+
+                        // 如果有检查结果，显示错误信息
+                        if (updateResult != null && updateResult?.error != null) {
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                text = updateResult!!.error!!,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.secondary
+                            )
+                        }
+                    }
+
+                    // Beta/Stable版本的检查逻辑
                     isChecking -> {
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
@@ -281,10 +333,13 @@ fun AboutScreen(
 
                             Button(
                                 onClick = {
-                                    result.latestRelease?.let { release ->
-                                        updateManager.openDownloadPage(release.tag_name)
-                                    } ?: run {
-                                        updateManager.openDownloadPage()
+                                    if (result.hasUpdate && result.latestRelease != null) {
+                                        updateManager.openDownloadPage(
+                                            versionTag = result.latestRelease.tag_name,
+                                            versionType = currentVersionType
+                                        )
+                                    } else {
+                                        updateManager.openDownloadPage(versionType = currentVersionType)
                                     }
                                 },
                                 modifier = Modifier.fillMaxWidth(),
@@ -320,7 +375,7 @@ fun AboutScreen(
             }
         }
 
-        // 3. 开源许可卡片（新增）
+        // 3. 开源许可卡片
         Card(
             modifier = Modifier
                 .fillMaxWidth()

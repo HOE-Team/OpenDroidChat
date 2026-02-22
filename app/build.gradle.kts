@@ -1,3 +1,6 @@
+import java.util.Properties
+import org.gradle.api.GradleException
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
@@ -13,30 +16,80 @@ android {
         applicationId = "com.hoeteam.opendroidchat"
         minSdk = 23
         targetSdk = 36
-        versionCode = 14
-        versionName = "Beta-1.1-OSAUpdate"
+        versionCode = 15
+        versionName = "Stable-1.2-CopyButtonUpdate"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
     signingConfigs {
         create("release") {
-            val storeFileProp = project.findProperty("STORE_FILE") as String?
-            val storePasswordProp = project.findProperty("STORE_PASSWORD") as String?
-            val keyAliasProp = project.findProperty("KEY_ALIAS") as String?
-            val keyPasswordProp = project.findProperty("KEY_PASSWORD") as String?
-            
-            if (storeFileProp != null) {
-                storeFile = file(storeFileProp)
-            }
-            if (storePasswordProp != null) {
-                storePassword = storePasswordProp
-            }
-            if (keyAliasProp != null) {
-                keyAlias = keyAliasProp
-            }
-            if (keyPasswordProp != null) {
-                keyPassword = keyPasswordProp
+            // 尝试从 keystore.properties 文件读取签名配置
+            val keystorePropertiesFile = rootProject.file("keystore.properties")
+            if (keystorePropertiesFile.exists()) {
+                println("Found keystore.properties, using it for release signing")
+                val keystoreProperties = Properties()
+                keystoreProperties.load(keystorePropertiesFile.inputStream())
+
+                val storeFileProp = keystoreProperties.getProperty("storeFile")
+                val storePasswordProp = keystoreProperties.getProperty("storePassword")
+                val keyAliasProp = keystoreProperties.getProperty("keyAlias")
+                val keyPasswordProp = keystoreProperties.getProperty("keyPassword")
+
+                if (storeFileProp != null) {
+                    storeFile = file(storeFileProp)
+                } else {
+                    throw GradleException("Keystore file path not found in keystore.properties")
+                }
+
+                if (storePasswordProp != null) {
+                    storePassword = storePasswordProp
+                } else {
+                    throw GradleException("Store password not found in keystore.properties")
+                }
+
+                if (keyAliasProp != null) {
+                    keyAlias = keyAliasProp
+                } else {
+                    throw GradleException("Key alias not found in keystore.properties")
+                }
+
+                if (keyPasswordProp != null) {
+                    keyPassword = keyPasswordProp
+                } else {
+                    throw GradleException("Key password not found in keystore.properties")
+                }
+            } else {
+                // 如果 keystore.properties 不存在，则从 gradle.properties 读取（用于调试）
+                println("keystore.properties not found, falling back to gradle.properties")
+                val storeFileProp = project.findProperty("STORE_FILE") as String?
+                val storePasswordProp = project.findProperty("STORE_PASSWORD") as String?
+                val keyAliasProp = project.findProperty("KEY_ALIAS") as String?
+                val keyPasswordProp = project.findProperty("KEY_PASSWORD") as String?
+
+                if (storeFileProp != null) {
+                    storeFile = file(storeFileProp)
+                } else {
+                    throw GradleException("STORE_FILE not found in gradle.properties")
+                }
+
+                if (storePasswordProp != null) {
+                    storePassword = storePasswordProp
+                } else {
+                    throw GradleException("STORE_PASSWORD not found in gradle.properties")
+                }
+
+                if (keyAliasProp != null) {
+                    keyAlias = keyAliasProp
+                } else {
+                    throw GradleException("KEY_ALIAS not found in gradle.properties")
+                }
+
+                if (keyPasswordProp != null) {
+                    keyPassword = keyPasswordProp
+                } else {
+                    throw GradleException("KEY_PASSWORD not found in gradle.properties")
+                }
             }
         }
     }
@@ -50,21 +103,28 @@ android {
             )
             signingConfig = signingConfigs.getByName("release")
         }
+
+        debug {
+            // debug 版本使用默认的调试签名
+            isDebuggable = true
+        }
     }
+
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
     }
+
     kotlinOptions {
         jvmTarget = "11"
     }
+
     buildFeatures {
         compose = true
     }
 }
 
 dependencies {
-
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.activity.compose)
@@ -95,9 +155,7 @@ dependencies {
     implementation(libs.io.ktor.ktor.client.core6)
     implementation(libs.io.ktor.ktor.client.android6)
     implementation(libs.io.ktor.ktor.client.content.negotiation6)
-    implementation(libs.io.ktor.ktor.client.content.negotiation6)
     implementation(libs.io.ktor.ktor.serialization.kotlinx.json6)
-    implementation("io.ktor:ktor-serialization-kotlinx-json:2.3.11")
 
     // Markdown 渲染 (直接使用 Markwon 以支持深色模式下行内代码主题)
     implementation("io.noties.markwon:core:4.6.2")

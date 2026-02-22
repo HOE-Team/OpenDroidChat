@@ -14,3 +14,9 @@
 .externalNativeBuild
 .cxx
 local.properties
+keystore.properties
+/.gradle
+/.kotlin
+/.vs
+/.idea
+/KeystoreArchive

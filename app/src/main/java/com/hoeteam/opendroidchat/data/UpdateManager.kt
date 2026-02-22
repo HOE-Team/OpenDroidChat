@@ -98,16 +98,25 @@ class UpdateManager(private val context: Context) {
     }
 
     /**
-     * 打开下载页面 (GitHub Releases)
+     * 打开下载页面 (GitHub Releases 或 Actions)
      */
-    fun openDownloadPage(versionTag: String? = null) {
-        val url = if (versionTag != null) {
-            updateChecker.getVersionPageUrl(versionTag)
-        } else {
-            updateChecker.getReleasesPageUrl()
+    fun openDownloadPage(versionTag: String? = null, versionType: VersionType = VersionType.STABLE) {
+        val url = when {
+            versionTag != null -> updateChecker.getVersionPageUrl(versionTag)
+            versionType == VersionType.NIGHTLY -> updateChecker.getActionsPageUrl()
+            else -> updateChecker.getReleasesPageUrl()
         }
 
         val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        context.startActivity(intent)
+    }
+
+    /**
+     * 打开 GitHub Actions 页面（用于 Nightly 版本）
+     */
+    fun openActionsPage() {
+        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(updateChecker.getActionsPageUrl()))
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         context.startActivity(intent)
     }

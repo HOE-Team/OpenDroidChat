@@ -21,6 +21,7 @@ class UpdateChecker(private val context: Context) {
     companion object {
         private const val GITHUB_API_URL = "https://api.github.com/repos/HOE-Team/OpenDroidChat/releases"
         private const val GITHUB_RELEASES_PAGE = "https://github.com/HOE-Team/OpenDroidChat/releases"
+        private const val GITHUB_ACTIONS_URL = "https://github.com/HOE-Team/OpenDroidChat/actions"
     }
 
     /**
@@ -70,7 +71,19 @@ class UpdateChecker(private val context: Context) {
             )
         }
 
-        // 创建新的 HttpClient 实例
+        // 如果是 Nightly 版本，返回特殊提示
+        if (targetType == VersionType.NIGHTLY) {
+            return UpdateCheckResult(
+                hasUpdate = false,
+                latestRelease = null,
+                currentVersion = currentVersion,
+                latestVersion = null,
+                versionType = targetType,
+                error = "Nightly版本通过GitHub Actions自动构建，请访问Actions页面下载最新构建"
+            )
+        }
+
+        // 创建新的 HttpClient 实例（仅用于 Beta/Stable）
         val client = HttpClient(Android) {
             install(ContentNegotiation) {
                 json(Json {
@@ -99,9 +112,7 @@ class UpdateChecker(private val context: Context) {
 
             // 根据目标类型过滤版本（大小写不敏感）
             val filteredReleases = when (targetType) {
-                VersionType.NIGHTLY -> releases.filter {
-                    it.tag_name.lowercase().startsWith("nightly")
-                }
+                VersionType.NIGHTLY -> emptyList() // Nightly 不检查 Releases
                 VersionType.BETA -> releases.filter {
                     it.tag_name.lowercase().startsWith("beta")
                 }
@@ -176,6 +187,11 @@ class UpdateChecker(private val context: Context) {
      * 获取 GitHub Releases 页面 URL
      */
     fun getReleasesPageUrl(): String = GITHUB_RELEASES_PAGE
+
+    /**
+     * 获取 GitHub Actions 页面 URL（用于 Nightly 版本）
+     */
+    fun getActionsPageUrl(): String = GITHUB_ACTIONS_URL
 
     /**
      * 获取指定版本的下载页面 URL

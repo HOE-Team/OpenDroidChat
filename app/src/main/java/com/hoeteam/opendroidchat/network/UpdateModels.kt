@@ -6,7 +6,7 @@ import kotlinx.serialization.Serializable
 @SuppressLint("UnsafeOptInUsageError")
 @Serializable
 data class GitHubRelease(
-    val tag_name: String,           // 版本标签，如 "nightly-1.0-20260216a" 或 "Beta-1.0" 或 "Stable-1.0" 或 "Stable-1.0Fix"
+    val tag_name: String,           // 版本标签，如 "Beta-1.0" 或 "Stable-1.0" 或 "Stable-1.0Fix"
     val name: String,                // 发布名称
     val body: String,                // 发布说明
     val prerelease: Boolean,         // 是否为预发布
@@ -26,7 +26,7 @@ data class ReleaseAsset(
  * 版本类型枚举
  */
 enum class VersionType {
-    NIGHTLY,    //  nightly-前缀，日期版本
+    NIGHTLY,    //  nightly-前缀，日期版本（格式：nightly-yymmdd）
     BETA,       //  Beta-前缀，主版本号
     STABLE;     //  Stable-前缀，主版本号
 
@@ -53,7 +53,7 @@ enum class VersionType {
 
         fun getDisplayName(type: VersionType): String {
             return when (type) {
-                VersionType.NIGHTLY -> "Nightly 测试版"
+                VersionType.NIGHTLY -> "Nightly 每夜构建版"
                 VersionType.BETA -> "Beta 公测版"
                 VersionType.STABLE -> "稳定版"
             }
@@ -92,42 +92,32 @@ sealed class ParsedVersion {
     abstract val isHotfix: Boolean
 
     /**
-     * 遵循Nightly版本格式: nightly-x.y-yyyymmddz
-     * 例如: nightly-1.0-20260216a
+     * Nightly版本格式: nightly-yymmdd
+     * 例如: nightly-260222 (（20）26年2月22日)
      */
     data class NightlyVersion(
         override val fullString: String,
         val prefix: String,              // nightly
-        val versionCode: String,         // 1.0
-        val dateCode: String             // 20260216a
+        val dateCode: String             // yymmdd
     ) : ParsedVersion() {
         override val versionType: VersionType = VersionType.NIGHTLY
-        override val baseVersion: String = "$prefix-$versionCode"
+        override val baseVersion: String = "$prefix-$dateCode"
         override val isHotfix: Boolean = false
 
         override fun isNewerThan(other: ParsedVersion): Boolean {
             if (other !is NightlyVersion) return true
 
-            // 提取日期数字部分
-            val thisDate = dateCode.takeWhile { it.isDigit() }.toIntOrNull() ?: 0
-            val otherDate = other.dateCode.takeWhile { it.isDigit() }.toIntOrNull() ?: 0
+            // 将yymmdd格式转换为整数进行比较
+            val thisDate = dateCode.toIntOrNull() ?: 0
+            val otherDate = other.dateCode.toIntOrNull() ?: 0
 
-            return when {
-                thisDate > otherDate -> true
-                thisDate < otherDate -> false
-                else -> {
-                    // 日期相同，比较字母后缀
-                    val thisSuffix = dateCode.dropWhile { it.isDigit() }
-                    val otherSuffix = other.dateCode.dropWhile { it.isDigit() }
-                    thisSuffix > otherSuffix
-                }
-            }
+            return thisDate > otherDate
         }
     }
 
     /**
      * 遵循下列Beta版本格式:
-     * - 应用内: Beta-x.y-Catalog 或 Beta-x.yFix-Catalog
+     * - 应用versionName: Beta-x.y-Catalog 或 Beta-x.yFix-Catalog
      * - GitHub标签: Beta-x.y 或 Beta-x.yFix
      */
     data class BetaVersion(
@@ -229,14 +219,13 @@ object VersionParser {
         // 移除可能的 "Version " 前缀
         val cleanVersion = versionString.removePrefix("Version ").trim()
 
-        // 尝试匹配 Nightly 版本: nightly-x.y-yyyymmddz (大小写不敏感)
-        val nightlyRegex = """^(?i)(nightly)-(\d+\.\d+)-(\d+[a-zA-Z]?)$""".toRegex()
+        // 尝试匹配 Nightly 版本: nightly-yymmdd (大小写不敏感)
+        val nightlyRegex = """^(?i)(nightly)-(\d{6})$""".toRegex()
         nightlyRegex.find(cleanVersion)?.let {
-            val (prefix, versionCode, dateCode) = it.destructured
+            val (prefix, dateCode) = it.destructured
             return ParsedVersion.NightlyVersion(
                 fullString = versionString,
                 prefix = prefix,
-                versionCode = versionCode,
                 dateCode = dateCode
             )
         }
