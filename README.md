@@ -10,7 +10,7 @@
 [![LICENSE](https://img.shields.io/github/license/HOE-Team/OpenDroidChat?style=for-the-badge)](https://github.com/HOE-Team/OpenDroidChat/blob/main/LICENSE)
 ![GitHub Release](https://img.shields.io/github/v/release/HOE-Team/OpenDroidChat?label=Release&logo=github&style=for-the-badge)
 
-**简体中文 | [English](docs/README_US.md)**
+**简体中文 | [English](docs/README_EN.md)**
 </div>
 
 > [!NOTE]
