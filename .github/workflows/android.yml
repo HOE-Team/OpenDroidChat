@@ -2,7 +2,7 @@ name: Nightly Android Build
 
 on:
   schedule:
-    - cron: '0 15 * * *'
+    - cron: '0 15 * * *'  # 北京时间 23:00
   workflow_dispatch:
 
 jobs:
@@ -26,25 +26,33 @@ jobs:
       - name: Set date environment variable
         run: echo "NIGHTLY_DATE=$(date +'%y%m%d')" >> $GITHUB_ENV
 
-      - name: Modify build.gradle.kts
+      - name: Modify build.gradle.kts (versionName as nightly)
         run: |
-          echo "Nightly version code: ${{ env.NIGHTLY_DATE }}"
+          echo "Setting versionName to: nightly-${{ env.NIGHTLY_DATE }}"
           
+          # 使用 awk 修改 applicationId 和 versionName
           awk -v date="${{ env.NIGHTLY_DATE }}" '
             /applicationId = / { 
               split($0, a, "\"")
               print "    applicationId = \"" a[2] ".nightly\""
               next 
             }
-            /versionCode = / { 
-              print "    versionCode = " date
+            /versionName = / { 
+              print "    versionName = \"nightly-" date "\""
               next 
             }
             {print}
-          ' app/build.gradle.kts > app/build.gradle.kts.tmp && mv app/build.gradle.kts.tmp app/build.gradle.kts
+          ' app/build.gradle.kts > app/build.gradle.kts.tmp
+          
+          # 替换原文件
+          mv app/build.gradle.kts.tmp app/build.gradle.kts
           
           echo "=== Modified build.gradle.kts ==="
           cat app/build.gradle.kts
+          
+          # 提取修改后的值
+          NEW_VERSION_NAME=$(grep -oP 'versionName = "\K[^"]+' app/build.gradle.kts)
+          echo "New versionName: $NEW_VERSION_NAME"
 
       - name: Build debug APK
         run: ./gradlew assembleDebug
@@ -53,14 +61,16 @@ jobs:
         run: |
           NIGHTLY_DATE=${{ env.NIGHTLY_DATE }}
           mkdir -p app/artifacts
-
+          
+          # 查找 APK 文件
           APK_FILE=$(find app/build/outputs/apk -name "*.apk" -type f | head -1)
           
           if [ -z "$APK_FILE" ]; then
             echo "[FAIL] No APK file found!"
             exit 1
           fi
-
+          
+          # 使用 nightly 日期命名
           cp "$APK_FILE" "app/artifacts/app-nightly-${NIGHTLY_DATE}.apk"
           
           echo "[SUCCESS] APK ready: app/artifacts/app-nightly-${NIGHTLY_DATE}.apk"
