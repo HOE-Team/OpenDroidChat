@@ -66,17 +66,22 @@
 > * 你可能需要使用 VPN 或代理来下载 Gradle 使用的外部资源。
 > * 你可能需要一台性能足够的计算机来完成编译。
 
+### 🔧 基本构建（Debug 版本）
+
 ```bash
 # 克隆仓库
 git clone https://github.com/HOE-Team/OpenDroidChat.git
 cd OpenDroidChat
 
-# 使用 Gradle Wrapper 构建
-./gradlew build    # Linux / macOS
-gradlew.bat build  # Windows
+# 使用 Gradle Wrapper 构建 Debug 版本
+./gradlew assembleDebug    # Linux / macOS
+gradlew.bat assembleDebug   # Windows
 ```
 
 构建成功后，APK 位于 `app/build/outputs/apk/`。
+
+**如果要执行Release构建，请参阅 [Release构建指南[↗]](/docs/PERFORM_A_RELEASE_BUILD.md)**
+
 
 ## 📁 项目结构
 
