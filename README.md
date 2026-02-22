@@ -16,6 +16,7 @@
 > [!NOTE]
 > 由于HOE Team开发人员错误的Git操作，导致了安全问题的发生，现已重新创建仓库以消除安全问题，对各贡献者及开发者带来的不便还请谅解，HOE Team将在今后的开发中避免此类安全问题的再次发生。  
 > 因为仓库的重新创建，先前的Releases、Star、Commit和Issue记录都已不存在，对各位用户和支持者带来的困扰我们深感歉意。
+> 注意：本项目已执行密钥轮换，您可能需要卸载后重新安装应用
 
 > [!IMPORTANT]
 > 由于安全原因(参见：[加密 | App quality | Android Developers[↗]](https://developer.android.google.cn/privacy-and-security/cryptography?hl=zh-cn#kotlin))，Alpha-0.6fix(6)以后的版本已**不支持**Android 5.x(API 21-22)的Android版本，你需要使用Android 6.0(API 23)及以上的 Android 运行此程序。
