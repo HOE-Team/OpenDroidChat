@@ -228,12 +228,13 @@ fun AboutScreen(
                         }
 
                         // 如果有检查结果，显示错误信息
-                        if (updateResult != null && updateResult?.error != null) {
+                        val errorMsg = updateResult?.error
+                        if (errorMsg != null) {
                             Spacer(modifier = Modifier.height(8.dp))
                             Text(
-                                text = updateResult!!.error!!,
+                                text = errorMsg,
                                 style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.secondary
+                                color = MaterialTheme.colorScheme.error
                             )
                         }
                     }
