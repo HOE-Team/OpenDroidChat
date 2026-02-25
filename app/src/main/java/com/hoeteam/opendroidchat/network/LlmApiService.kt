@@ -1,3 +1,8 @@
+/*
+OpenDroidChat LLM API Service Module
+Copyright (C) 2025-2026 HOE Team. All rights reserved.
+The source code is open-sourced under the MIT License.
+*/
 package com.hoeteam.opendroidchat.network
 
 import com.hoeteam.opendroidchat.data.*
