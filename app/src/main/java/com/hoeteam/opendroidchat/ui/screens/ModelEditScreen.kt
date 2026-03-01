@@ -3,7 +3,7 @@ OpenDroidChat Model Edit Screen
 Copyright (C) 2025-2026 HOE Team. All rights reserved.
 The source code is open-sourced under the MIT License.
 */
-package com.hoeteam.opendroidchat.ui
+package com.hoeteam.opendroidchat.ui.screens
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -28,10 +28,9 @@ import com.hoeteam.opendroidchat.viewmodel.ChatViewModelFactory
 @Composable
 fun ModelEditScreen(
     viewModel: ChatViewModel = viewModel(factory = ChatViewModelFactory(LocalContext.current)),
-    modelToEdit: LlmModel?, // 为 null 表示新增
+    modelToEdit: LlmModel?,
     onSave: () -> Unit
 ) {
-    // 初始化状态，如果是编辑则使用 modelToEdit 的值
     val isNewModel = modelToEdit == null
     val originalId = modelToEdit?.id ?: ""
 
@@ -41,11 +40,10 @@ fun ModelEditScreen(
     var modelName by remember(modelToEdit) { mutableStateOf(modelToEdit?.modelName ?: "") }
     var systemPrompt by remember(modelToEdit) { mutableStateOf(modelToEdit?.systemPrompt ?: "") }
     var customApiUrl by remember(modelToEdit) { mutableStateOf(modelToEdit?.customApiUrl ?: "") }
-    var appId by remember(modelToEdit) { mutableStateOf(modelToEdit?.appId ?: "") } // <-- 确保 App ID 状态变量已声明
+    var appId by remember(modelToEdit) { mutableStateOf(modelToEdit?.appId ?: "") }
 
     var expanded by remember { mutableStateOf(false) }
 
-    // 检查是否所有必填字段都已填写
     val isSaveEnabled = name.isNotBlank() && apiKey.isNotBlank() && modelName.isNotBlank()
 
     Scaffold(
@@ -63,7 +61,6 @@ fun ModelEditScreen(
         bottomBar = {
             Button(
                 onClick = {
-                    // 修正点 1: 在保存时包含 customApiUrl 和 appId
                     val newModel = LlmModel(
                         id = originalId.ifBlank { java.util.UUID.randomUUID().toString() },
                         name = name.trim(),
@@ -71,9 +68,7 @@ fun ModelEditScreen(
                         apiKey = apiKey.trim(),
                         modelName = modelName.trim(),
                         systemPrompt = systemPrompt.trim(),
-                        // 确保只有当 provider 为 Custom 时才保存 customApiUrl
                         customApiUrl = customApiUrl.trim().takeIf { it.isNotBlank() && provider == LlmProvider.Custom },
-                        // 确保保存 appId
                         appId = appId.trim().takeIf { it.isNotBlank() }
                     )
                     viewModel.addOrUpdateModel(newModel)
@@ -95,7 +90,6 @@ fun ModelEditScreen(
                 .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // 1. 模型用户名称
             OutlinedTextField(
                 value = name,
                 onValueChange = { name = it },
@@ -104,7 +98,6 @@ fun ModelEditScreen(
                 modifier = Modifier.fillMaxWidth()
             )
 
-            // 2. LLM 提供商选择 (DropdownMenu)
             ExposedDropdownMenuBox(
                 expanded = expanded,
                 onExpandedChange = { expanded = !expanded }
@@ -129,8 +122,6 @@ fun ModelEditScreen(
                             onClick = {
                                 provider = p
                                 expanded = false
-
-                                // 切换提供商时清空 customApiUrl 和 appId，避免混淆
                                 customApiUrl = ""
                                 appId = ""
                             },
@@ -140,7 +131,6 @@ fun ModelEditScreen(
                 }
             }
 
-            // 3. 模型名称 (API 专用)
             OutlinedTextField(
                 value = modelName,
                 onValueChange = { modelName = it },
@@ -149,7 +139,6 @@ fun ModelEditScreen(
                 modifier = Modifier.fillMaxWidth()
             )
 
-            // 4. API Key 输入 (密码形式)
             OutlinedTextField(
                 value = apiKey,
                 onValueChange = { apiKey = it },
@@ -160,7 +149,6 @@ fun ModelEditScreen(
                 modifier = Modifier.fillMaxWidth()
             )
 
-            // 5. 自定义 API URL (仅当选择 "自定义 API" 时显示)
             if (provider == LlmProvider.Custom) {
                 OutlinedTextField(
                     value = customApiUrl,
@@ -171,8 +159,6 @@ fun ModelEditScreen(
                 )
             }
 
-            // 修正点 2: App ID 输入框显示逻辑
-            // 仅当选择 "Dashscope" 或 "自定义 API" 时显示 App ID
             if (provider == LlmProvider.Dashscope || provider == LlmProvider.Custom) {
                 OutlinedTextField(
                     value = appId,
@@ -190,7 +176,6 @@ fun ModelEditScreen(
                 )
             }
 
-            // 7. 系统提示词 (System Prompt)
             OutlinedTextField(
                 value = systemPrompt,
                 onValueChange = { systemPrompt = it },

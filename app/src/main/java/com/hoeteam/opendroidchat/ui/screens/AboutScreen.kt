@@ -3,7 +3,7 @@ OpenDroidChat About Screen
 Copyright (C) 2025-2026 HOE Team. All rights reserved.
 The source code is open-sourced under the MIT License.
 */
-package com.hoeteam.opendroidchat.ui
+package com.hoeteam.opendroidchat.ui.screens
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -27,7 +27,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.hoeteam.opendroidchat.data.UpdateManager
 import com.hoeteam.opendroidchat.network.UpdateCheckResult
-import com.hoeteam.opendroidchat.network.VersionParser
 import com.hoeteam.opendroidchat.network.VersionType
 import kotlinx.coroutines.*
 
@@ -41,33 +40,24 @@ fun AboutScreen(
     val scope = rememberCoroutineScope()
     val updateManager = remember { UpdateManager(context) }
 
-    // 当前版本
     val currentVersion by remember { mutableStateOf(updateManager.getCurrentVersion()) }
     val currentVersionType by remember { mutableStateOf(updateManager.getCurrentVersionType()) }
 
-    // 更新检查结果状态
     var updateResult by remember { mutableStateOf<UpdateCheckResult?>(null) }
     var isChecking by remember { mutableStateOf(false) }
-
-    // 用于取消正在进行的检查的Job
     val checkJob = remember { mutableStateOf<Job?>(null) }
 
-    // 检查更新函数
     fun checkForUpdates() {
         checkJob.value?.cancel()
-
         checkJob.value = scope.launch {
             isChecking = true
             updateResult = null
-
             try {
                 val result = withContext(Dispatchers.IO) {
                     updateManager.checkForUpdates(currentVersionType)
                 }
-
                 if (!isActive) return@launch
                 updateResult = result
-
             } catch (e: CancellationException) {
                 println("更新检查被取消")
             } catch (e: Exception) {
@@ -89,21 +79,18 @@ fun AboutScreen(
         }
     }
 
-    // 自动检查更新（非Nightly版本自动检查，Nightly版本不自动检查）
     LaunchedEffect(Unit) {
         if (currentVersionType != VersionType.NIGHTLY && updateResult == null) {
             checkForUpdates()
         }
     }
 
-    // 清理协程
     DisposableEffect(Unit) {
         onDispose {
             checkJob.value?.cancel()
         }
     }
 
-    // 获取版本类型显示文本
     fun getVersionTypeText(): String {
         return when (currentVersionType) {
             VersionType.NIGHTLY -> "Nightly 每夜构建版"
@@ -128,7 +115,6 @@ fun AboutScreen(
             }
         )
 
-        // 1. 应用简介卡片
         Card(
             modifier = Modifier
                 .fillMaxWidth()
@@ -151,7 +137,6 @@ fun AboutScreen(
             }
         }
 
-        // 2. 版本信息卡片
         Card(
             modifier = Modifier
                 .fillMaxWidth()
@@ -168,13 +153,11 @@ fun AboutScreen(
                     modifier = Modifier.padding(bottom = 8.dp)
                 )
 
-                // 当前版本显示
                 Text(
                     text = "Version $currentVersion",
                     style = MaterialTheme.typography.bodyMedium
                 )
 
-                // 版本类型标签
                 Surface(
                     color = MaterialTheme.colorScheme.primaryContainer,
                     shape = MaterialTheme.shapes.small,
@@ -190,9 +173,7 @@ fun AboutScreen(
 
                 Spacer(modifier = Modifier.height(12.dp))
 
-                // 更新检查区域 - 根据版本类型显示不同内容
                 when {
-                    // Nightly版本特殊处理
                     currentVersionType == VersionType.NIGHTLY -> {
                         Text(
                             text = "Nightly版本通过GitHub Actions自动构建",
@@ -203,7 +184,6 @@ fun AboutScreen(
 
                         Spacer(modifier = Modifier.height(8.dp))
 
-                        // 直接显示查看Actions按钮
                         Column(
                             verticalArrangement = Arrangement.spacedBy(8.dp),
                             modifier = Modifier.fillMaxWidth()
@@ -231,7 +211,6 @@ fun AboutScreen(
                             }
                         }
 
-                        // 如果有检查结果，显示错误信息
                         val errorMsg = updateResult?.error
                         if (errorMsg != null) {
                             Spacer(modifier = Modifier.height(8.dp))
@@ -243,7 +222,6 @@ fun AboutScreen(
                         }
                     }
 
-                    // Beta/Stable版本的检查逻辑
                     isChecking -> {
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
@@ -272,7 +250,6 @@ fun AboutScreen(
                     else -> {
                         val result = updateResult!!
 
-                        // 检查结果显示 - 使用 Material Icons
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
                             modifier = Modifier.padding(vertical = 4.dp)
@@ -366,7 +343,6 @@ fun AboutScreen(
                             }
                         }
 
-                        // 错误详情
                         if (result.error != null) {
                             Spacer(modifier = Modifier.height(8.dp))
                             Text(
@@ -380,7 +356,6 @@ fun AboutScreen(
             }
         }
 
-        // 3. 开源许可卡片
         Card(
             modifier = Modifier
                 .fillMaxWidth()
@@ -407,7 +382,6 @@ fun AboutScreen(
             }
         }
 
-        // 4. 版权信息卡片
         Card(
             modifier = Modifier.fillMaxWidth()
         ) {

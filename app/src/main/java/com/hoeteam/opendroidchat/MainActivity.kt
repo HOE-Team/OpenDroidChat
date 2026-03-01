@@ -35,13 +35,12 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.mutableStateOf
 import com.hoeteam.opendroidchat.data.SettingsRepository
 import com.hoeteam.opendroidchat.network.LlmApiService
-import com.hoeteam.opendroidchat.ui.ChatScreen
-import com.hoeteam.opendroidchat.ui.ModelEditScreen
-import com.hoeteam.opendroidchat.ui.ModelSettingsScreen
-import com.hoeteam.opendroidchat.ui.SettingsScreen
-import com.hoeteam.opendroidchat.ui.AboutScreen
-import com.hoeteam.opendroidchat.ui.LicenseScreen  // 新增导入
-// 请根据您的主题文件 (ui.theme/Theme.kt) 中定义的函数名修改此处的引用
+import com.hoeteam.opendroidchat.ui.screens.ChatScreen
+import com.hoeteam.opendroidchat.ui.screens.ModelEditScreen
+import com.hoeteam.opendroidchat.ui.screens.ModelSettingsScreen
+import com.hoeteam.opendroidchat.ui.screens.SettingsScreen
+import com.hoeteam.opendroidchat.ui.screens.AboutScreen
+import com.hoeteam.opendroidchat.ui.screens.LicenseScreen
 import com.hoeteam.opendroidchat.ui.theme.OpenDroidChatTheme
 import com.hoeteam.opendroidchat.viewmodel.ChatViewModel
 import com.hoeteam.opendroidchat.viewmodel.ChatViewModelFactory
@@ -74,7 +73,7 @@ object Destinations {
     const val MODEL_EDIT = "edit_model/{modelId}"
     const val SETTINGS_SCREEN = "app_settings"
     const val ABOUT_SCREEN = "about_app"
-    const val LICENSE_SCREEN = "license_screen"  // 新增：开源许可界面
+    const val LICENSE_SCREEN = "license_screen"
     const val ARG_MODEL_ID = "modelId"
 }
 
