@@ -17,7 +17,7 @@ android {
         minSdk = 23
         targetSdk = 36
         versionCode = 16
-        versionName = "Stable-1.3-ExperienceOptimization"
+        versionName = "Stable-1.4-LandscapeOptim"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }

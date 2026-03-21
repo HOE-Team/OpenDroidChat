@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.automirrored.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -33,6 +34,9 @@ import androidx.navigation.NavType
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Column
 import com.hoeteam.opendroidchat.data.SettingsRepository
 import com.hoeteam.opendroidchat.network.LlmApiService
 import com.hoeteam.opendroidchat.ui.screens.ChatScreen
@@ -92,6 +96,8 @@ fun MainNavigation(themeViewModel: ThemeViewModel) {
 
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = navBackStackEntry?.destination
+    val configuration = LocalConfiguration.current
+    val isLandscape = configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE
 
     // 统一的根屏幕导航逻辑
     val navigateToRootScreen: (String) -> Unit = { route ->
@@ -107,38 +113,61 @@ fun MainNavigation(themeViewModel: ThemeViewModel) {
         }
     }
 
-    val bottomBar: @Composable (NavController) -> Unit = { navController ->
-        // 检查当前路由是否是底部导航栏的路由之一 (只在根屏幕显示 BNB)
+    @Composable
+    fun NavigationComponent() {
+        // 检查当前路由是否是底部导航栏的路由之一 (只在根屏幕显示导航)
         val rootRoutes = screens.map { it.first }.toSet()
-        val shouldShowBottomBar = currentDestination?.route in rootRoutes
-        if (shouldShowBottomBar) {
-            NavigationBar {
-                screens.forEach { (route, label) ->
-                    NavigationBarItem(
-                        icon = {
-                            when (route) {
-                                Destinations.CHAT_SCREEN -> Icon(Icons.Filled.Chat, contentDescription = label) // 统一 Chat 图标
-                                Destinations.MODEL_SETTINGS -> Icon(Icons.Filled.List, contentDescription = label)
-                                Destinations.SETTINGS_SCREEN -> Icon(Icons.Filled.Settings, contentDescription = label)
-                                else -> Icon(Icons.Filled.MoreVert, contentDescription = label) // Fallback icon
-                            }
-                        },
-                        label = { Text(label) },
-                        selected = currentDestination?.hierarchy?.any { it.route == route } == true,
-                        onClick = { navigateToRootScreen(route) } // 使用统一导航逻辑
-                    )
+        val shouldShowNavigation = currentDestination?.route in rootRoutes
+        
+        if (shouldShowNavigation) {
+            if (isLandscape) {
+                // 横屏时显示 NavigationRail
+                NavigationRail {
+                    screens.forEach { (route, label) ->
+                        NavigationRailItem(
+                            icon = {
+                                when (route) {
+                                    Destinations.CHAT_SCREEN -> Icon(Icons.AutoMirrored.Filled.Chat, contentDescription = label)
+                                    Destinations.MODEL_SETTINGS -> Icon(Icons.AutoMirrored.Filled.List, contentDescription = label)
+                                    Destinations.SETTINGS_SCREEN -> Icon(Icons.Filled.Settings, contentDescription = label)
+                                    else -> Icon(Icons.Filled.MoreVert, contentDescription = label)
+                                }
+                            },
+                            label = { Text(label) },
+                            selected = currentDestination?.hierarchy?.any { it.route == route } == true,
+                            onClick = { navigateToRootScreen(route) }
+                        )
+                    }
+                }
+            } else {
+                // 竖屏时显示 NavigationBar
+                NavigationBar {
+                    screens.forEach { (route, label) ->
+                        NavigationBarItem(
+                            icon = {
+                                when (route) {
+                                    Destinations.CHAT_SCREEN -> Icon(Icons.AutoMirrored.Filled.Chat, contentDescription = label)
+                                    Destinations.MODEL_SETTINGS -> Icon(Icons.AutoMirrored.Filled.List, contentDescription = label)
+                                    Destinations.SETTINGS_SCREEN -> Icon(Icons.Filled.Settings, contentDescription = label)
+                                    else -> Icon(Icons.Filled.MoreVert, contentDescription = label)
+                                }
+                            },
+                            label = { Text(label) },
+                            selected = currentDestination?.hierarchy?.any { it.route == route } == true,
+                            onClick = { navigateToRootScreen(route) }
+                        )
+                    }
                 }
             }
         }
     }
 
-    Scaffold(
-        bottomBar = { bottomBar(navController) }
-    ) { innerPadding ->
+    @Composable
+    fun Content(modifier: Modifier = Modifier) {
         NavHost(
             navController = navController as NavHostController,
             startDestination = Destinations.CHAT_SCREEN,
-            modifier = Modifier.padding(innerPadding)
+            modifier = modifier.fillMaxSize()
         ) {
             // 1. 聊天界面
             composable(Destinations.CHAT_SCREEN) {
@@ -213,6 +242,21 @@ fun MainNavigation(themeViewModel: ThemeViewModel) {
                     onBack = { navController.popBackStack() } // 返回到 AboutScreen
                 )
             }
+        }
+    }
+
+    if (isLandscape) {
+        // 横屏布局：左侧 NavigationRail，右侧内容
+        Row(modifier = Modifier.fillMaxSize()) {
+            NavigationComponent()
+            Content()
+        }
+    } else {
+        // 竖屏布局：底部 NavigationBar，上方内容
+        Scaffold(
+            bottomBar = { NavigationComponent() }
+        ) { innerPadding ->
+            Content(modifier = Modifier.padding(innerPadding))
         }
     }
 }
