@@ -33,6 +33,7 @@
 * [**Gradle**[↗]](https://gradle.org/) — 构建工具
 * [**Markwon**[↗]](https://github.com/noties/Markwon) — 用于渲染 LLM 消息中的 Markdown
 * [**OkHttp**[↗]](https://square.ac.cn/okhttp/) — 高效、功能强大的 Java/Android HTTP 客户端。
+* [**Ktor**[↗]](https://ktor.io/) — 基于 Kotlin 协程的异步后端框架，支持多平台。
 
 ## ✨ 特性
 
