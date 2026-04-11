@@ -13,7 +13,7 @@
 **简体中文 | [English](docs/README_EN.md)**
 </div>
 
-> [!TIP]
+> [!IMPORTANT]
 > OpenDroidChat正处于危机！访问并了解 [KeepAndroidOpen](https://keepandroidopen.org)，反对 Google 强制验证所有 Android 开发者的政策 —— 这破坏了 Android 的开放根基
 
 > [!NOTE]
