@@ -14,7 +14,7 @@
 </div>
 
 > [!TIP]
-> OpenDroidChat正处于危机！访问 [KeepAndroidOpen](https://keepandroidopen.org)，反对 Google 强制验证所有 Android 开发 者的政策 —— 这破坏了 Android 的开放根基
+> OpenDroidChat正处于危机！访问 [KeepAndroidOpen](https://keepandroidopen.org)，反对 Google 强制验证所有 Android 开发者的政策 —— 这破坏了 Android 的开放根基
 
 > [!NOTE]
 > 由于HOE Team开发人员错误的Git操作，导致了安全问题的发生，现已重新创建仓库以消除安全问题，对各贡献者及开发者带来的不便还请谅解，HOE Team将在今后的开发中避免此类安全问题的再次发生。  
