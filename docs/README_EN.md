@@ -13,6 +13,9 @@
 **[简体中文](../README.md) | English**
 </div>
 
+> [!TIP]
+> OpenDroidChat is in crisis! Visit  and learn about [KeepAndroidOpen](https://keepandroidopen.org) — oppose Google’s policy of forcing mandatory verification for all Android developers, which undermines the open foundation of Android.
+
 > [!NOTE]
 > Due to an erroneous Git operation by the HOE Team developers, a security issue occurred. The repository has been recreated to eliminate this security concern. We apologize for any inconvenience caused to contributors and developers. The HOE Team will take measures to prevent such security issues in future development.  
 > Because the repository was recreated, all previous Releases, Stars, Commits, and Issues records no longer exist. We deeply apologize for the trouble caused to our users and supporters.  
