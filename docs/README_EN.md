@@ -13,19 +13,15 @@
 **[简体中文](../README.md) | English**
 </div>
 
+> [!IMPORTANT]
+> OpenDroidChat is in crisis! Visit  and learn about [KeepAndroidOpen](https://keepandroidopen.org) — oppose Google’s policy of forcing mandatory verification for all Android developers, which undermines the open foundation of Android.
+
 > [!NOTE]
 > Due to an erroneous Git operation by the HOE Team developers, a security issue occurred. The repository has been recreated to eliminate this security concern. We apologize for any inconvenience caused to contributors and developers. The HOE Team will take measures to prevent such security issues in future development.  
 > Because the repository was recreated, all previous Releases, Stars, Commits, and Issues records no longer exist. We deeply apologize for the trouble caused to our users and supporters.  
 > Note: This project has undergone key rotation. You may need to uninstall and reinstall the application.
 >   
 > AI-generated notice: This document is translated by AI and may not be accurate. Please pay attention to the distinctions.
-
-> [!IMPORTANT]
-> For security reasons (see: [Cryptography | App quality | Android Developers[↗]](https://developer.android.google.cn/privacy-and-security/cryptography?hl=en#kotlin)), versions after Alpha-0.6fix(6) **no longer support** Android 5.x (API 21-22). You need to use Android 6.0 (API 23) or higher to run this application.
-
-> [!WARNING]
-> If you are using Android 5.x (API 21-22), you can only use Alpha-0.5(5) or earlier versions.  
-> Alpha-0.5(5) and earlier versions lack encryption protection for sensitive information such as API keys. Continuing to use these old versions on Android 5.x (API 21-22) devices may lead to your credentials being leaked. The developers are not responsible for any such data breaches.
 
 ## 🔨 Tech Stack
 
