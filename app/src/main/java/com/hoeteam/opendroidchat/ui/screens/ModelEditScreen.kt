@@ -13,6 +13,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardType
@@ -41,6 +42,9 @@ fun ModelEditScreen(
     var systemPrompt by remember(modelToEdit) { mutableStateOf(modelToEdit?.systemPrompt ?: "") }
     var customApiUrl by remember(modelToEdit) { mutableStateOf(modelToEdit?.customApiUrl ?: "") }
     var appId by remember(modelToEdit) { mutableStateOf(modelToEdit?.appId ?: "") }
+    var useStream by remember(modelToEdit) { 
+        mutableStateOf(modelToEdit?.useStream ?: (provider != LlmProvider.Custom)) 
+    }
 
     var expanded by remember { mutableStateOf(false) }
 
@@ -69,7 +73,8 @@ fun ModelEditScreen(
                         modelName = modelName.trim(),
                         systemPrompt = systemPrompt.trim(),
                         customApiUrl = customApiUrl.trim().takeIf { it.isNotBlank() && provider == LlmProvider.Custom },
-                        appId = appId.trim().takeIf { it.isNotBlank() }
+                        appId = appId.trim().takeIf { it.isNotBlank() },
+                        useStream = if (provider == LlmProvider.Custom) useStream else true
                     )
                     viewModel.addOrUpdateModel(newModel)
                     onSave()
@@ -122,7 +127,12 @@ fun ModelEditScreen(
                             onClick = {
                                 provider = p
                                 expanded = false
-                                customApiUrl = ""
+                                if (p != LlmProvider.Custom) {
+                                    useStream = true
+                                    customApiUrl = ""
+                                } else {
+                                    useStream = false
+                                }
                                 appId = ""
                             },
                             contentPadding = ExposedDropdownMenuDefaults.ItemContentPadding
@@ -157,6 +167,31 @@ fun ModelEditScreen(
                     placeholder = { Text("例如：https://your-custom-api.com/v1/chat") },
                     modifier = Modifier.fillMaxWidth()
                 )
+
+                // 自定义 API 额外显示的流式传输开关
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = "允许流式传输 (Stream)",
+                            style = MaterialTheme.typography.bodyLarge
+                        )
+                        Text(
+                            text = "开启后将实时显示模型输出，需自定义 API 支持 SSE 协议。",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    Switch(
+                        checked = useStream,
+                        onCheckedChange = { useStream = it }
+                    )
+                }
             }
 
             if (provider == LlmProvider.Dashscope || provider == LlmProvider.Custom) {

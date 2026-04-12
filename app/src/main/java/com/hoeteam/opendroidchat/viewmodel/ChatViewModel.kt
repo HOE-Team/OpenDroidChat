@@ -76,43 +76,54 @@ class ChatViewModel(
                     )
                 }
 
-            val llmMessageId = System.currentTimeMillis() + 1
-            val initialLlmMessage = Message(
-                id = llmMessageId,
-                text = "",
-                sender = Sender.LLM,
-                isStreaming = true
-            )
-            _messages.update { it + initialLlmMessage }
+            if (currentModel.useStream) {
+                // 流式请求逻辑
+                val llmMessageId = System.currentTimeMillis() + 1
+                val initialLlmMessage = Message(
+                    id = llmMessageId,
+                    text = "",
+                    sender = Sender.LLM,
+                    isStreaming = true
+                )
+                _messages.update { it + initialLlmMessage }
 
-            var fullResponseText = ""
+                var fullResponseText = ""
 
-            try {
-                apiService.sendChatStream(apiMessages, currentModel)
-                    .onStart { 
-                        // Start is handled by setting _isLoading.value = true before launch
-                    }
-                    .catch { e ->
-                        val errorMessage = "LLM API 响应出错: ${e.message ?: "未知错误"}"
-                        updateMessageText(llmMessageId, errorMessage, isStreaming = false)
-                        _errorState.emit("API 调用失败：${e.localizedMessage}")
-                        _isLoading.value = false
-                    }
-                    .collect { chunk ->
-                        if (fullResponseText.isEmpty()) {
-                            _isLoading.value = false // Hide loading indicator as soon as we get first chunk
+                try {
+                    apiService.sendChatStream(apiMessages, currentModel)
+                        .catch { e ->
+                            val errorMessage = "LLM API 响应出错: ${e.message ?: "未知错误"}"
+                            updateMessageText(llmMessageId, errorMessage, isStreaming = false)
+                            _errorState.emit("API 调用失败：${e.localizedMessage}")
+                            _isLoading.value = false
                         }
-                        fullResponseText += chunk
-                        updateMessageText(llmMessageId, fullResponseText, isStreaming = true)
-                    }
-                
-                // Stream finished successfully
-                updateMessageText(llmMessageId, fullResponseText, isStreaming = false)
-
-            } catch (e: Exception) {
-                _isLoading.value = false
-            } finally {
-                _isLoading.value = false
+                        .collect { chunk ->
+                            if (fullResponseText.isEmpty()) {
+                                _isLoading.value = false
+                            }
+                            fullResponseText += chunk
+                            updateMessageText(llmMessageId, fullResponseText, isStreaming = true)
+                        }
+                    updateMessageText(llmMessageId, fullResponseText, isStreaming = false)
+                } catch (e: Exception) {
+                    _isLoading.value = false
+                } finally {
+                    _isLoading.value = false
+                }
+            } else {
+                // 传统非流式请求逻辑
+                try {
+                    val response = apiService.sendChat(apiMessages, currentModel)
+                    val llmMessage = Message(text = response, sender = Sender.LLM)
+                    _messages.update { it + llmMessage }
+                } catch (e: Exception) {
+                    val errorMessage = "LLM API 响应出错: ${e.message ?: "未知错误"}"
+                    val errorMsgForUi = Message(text = errorMessage, sender = Sender.LLM)
+                    _messages.update { it + errorMsgForUi }
+                    _errorState.emit("API 调用失败：${e.localizedMessage}")
+                } finally {
+                    _isLoading.value = false
+                }
             }
         }
     }

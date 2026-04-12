@@ -29,7 +29,8 @@ data class LlmModel(
     val modelName: String,
     val systemPrompt: String, // 系统默认的提示词
     val customApiUrl: String? = null,
-    val appId: String? = null
+    val appId: String? = null,
+    val useStream: Boolean = true // 是否使用流式传输，默认为 true
 )
 
 // 聊天消息 (用于 UI 展示)
