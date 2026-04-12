@@ -16,8 +16,8 @@ android {
         applicationId = "com.hoeteam.opendroidchat"
         minSdk = 23
         targetSdk = 36
-        versionCode = 16
-        versionName = "Stable-1.4-LandscapeOptim"
+        versionCode = 17
+        versionName = "Beta-1.5-StreamTransferUpdate"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }

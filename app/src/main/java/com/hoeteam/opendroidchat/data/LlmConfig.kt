@@ -27,7 +27,7 @@ data class LlmModel(
     val provider: LlmProvider,
     val apiKey: String,
     val modelName: String,
-    val systemPrompt: String, // 系统默认的提示词，这里没有加则意味着我想让用户自己选择加不加/怎么加
+    val systemPrompt: String, // 系统默认的提示词
     val customApiUrl: String? = null,
     val appId: String? = null
 )
@@ -38,7 +38,8 @@ data class Message(
     val id: Long = System.currentTimeMillis(),
     val text: String,
     val sender: Sender,
-    val timestamp: Long = System.currentTimeMillis()
+    val timestamp: Long = System.currentTimeMillis(),
+    val isStreaming: Boolean = false
 )
 
 enum class Sender {
@@ -52,20 +53,28 @@ enum class Sender {
 @Serializable
 data class ChatRequest(
     val model: String,
-    val messages: List<ApiMessage>
+    val messages: List<ApiMessage>,
+    val stream: Boolean? = null
 )
 
 @SuppressLint("UnsafeOptInUsageError")
 @Serializable
 data class ChatResponse(
-    val id: String,
+    val id: String? = null,
     val choices: List<Choice>
 )
 
 @SuppressLint("UnsafeOptInUsageError")
 @Serializable
 data class Choice(
-    val message: ApiMessage
+    val message: ApiMessage? = null,
+    val delta: Delta? = null
+)
+
+@SuppressLint("UnsafeOptInUsageError")
+@Serializable
+data class Delta(
+    val content: String? = null
 )
 
 @SuppressLint("UnsafeOptInUsageError")
@@ -73,4 +82,25 @@ data class Choice(
 data class ApiMessage(
     val role: String, // "user" 或 "assistant"
     val content: String
+)
+
+// Gemini Streaming Models
+@Serializable
+data class GeminiContent(
+    val parts: List<GeminiPart>
+)
+
+@Serializable
+data class GeminiPart(
+    val text: String
+)
+
+@Serializable
+data class GeminiResponse(
+    val candidates: List<GeminiCandidate>
+)
+
+@Serializable
+data class GeminiCandidate(
+    val content: GeminiContent
 )

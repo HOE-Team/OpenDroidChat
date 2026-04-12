@@ -12,33 +12,41 @@ import io.ktor.client.engine.android.*
 import io.ktor.client.plugins.*
 import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.client.request.*
+import io.ktor.client.statement.*
 import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
+import io.ktor.utils.io.*
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flow
 import kotlinx.serialization.json.Json
 import java.net.UnknownHostException
 
 class LlmApiService {
+    private val json = Json {
+        ignoreUnknownKeys = true
+        prettyPrint = true
+        isLenient = true
+    }
+
     private val client = HttpClient(Android) {
         install(ContentNegotiation) {
-            json(Json {
-                ignoreUnknownKeys = true
-                prettyPrint = true
-                isLenient = true
-            })
+            json(json)
         }
         install(HttpTimeout) {
-            requestTimeoutMillis = 300000 // 5分钟超时，适应长内容生成
+            requestTimeoutMillis = 300000 // 5分钟超时
             connectTimeoutMillis = 60000  // 1分钟连接超时
             socketTimeoutMillis = 300000  // 5分钟套接字超时
         }
         expectSuccess = true
     }
 
-    private fun getApiUrl(provider: LlmProvider): String {
+    private fun getApiUrl(provider: LlmProvider, isStream: Boolean): String {
         return when (provider) {
             LlmProvider.OpenAI -> "https://api.openai.com/v1/chat/completions"
-            // 注意：Gemini URL 中的模型名需要替换
-            LlmProvider.Gemini -> "https://generativelanguage.googleapis.com/v1beta/models/MODEL_PLACEHOLDER:generateContent"
+            LlmProvider.Gemini -> {
+                val action = if (isStream) "streamGenerateContent" else "generateContent"
+                "https://generativelanguage.googleapis.com/v1beta/models/MODEL_PLACEHOLDER:$action"
+            }
             LlmProvider.DeepSeek -> "https://api.deepseek.com/v1/chat/completions"
             LlmProvider.Dashscope -> "https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions"
             LlmProvider.Claude -> "https://api.anthropic.com/v1/messages"
@@ -48,68 +56,136 @@ class LlmApiService {
 
     private val modelNamePlaceholder = "MODEL_PLACEHOLDER"
 
-    suspend fun sendChat(
+    fun sendChatStream(
         messages: List<ApiMessage>,
         config: LlmModel
-    ): String {
-        // 1. 确定 API URL 和 Key
-        var apiUrl = config.customApiUrl.takeIf { it?.isNotBlank() == true } ?: getApiUrl(config.provider)
+    ): Flow<String> = flow {
+        var apiUrl = config.customApiUrl.takeIf { it?.isNotBlank() == true } ?: getApiUrl(config.provider, true)
         val apiKey = config.apiKey
 
         if (apiUrl.isBlank() || apiKey.isBlank()) {
-            throw IllegalStateException("API URL 或 API Key 不能为空。请检查配置。")
+            throw IllegalStateException("API URL 或 API Key 不能为空。")
         }
 
         if (config.provider == LlmProvider.Gemini) {
             apiUrl = apiUrl.replace(modelNamePlaceholder, config.modelName)
         }
 
-        // 2. 构造请求体
         val systemMessage = ApiMessage(role = "system", content = config.systemPrompt)
         val fullMessages = listOf(systemMessage) + messages
 
         val requestBody = ChatRequest(
             model = config.modelName,
-            messages = fullMessages
+            messages = fullMessages,
+            stream = true
         )
 
-        // 3. 发起请求
         try {
-            val response: ChatResponse = client.post(apiUrl) {
-                // 默认使用 Authorization Header
+            client.preparePost(apiUrl) {
                 header("Authorization", "Bearer $apiKey")
-
-                // 根据提供商定制请求头/参数
                 when (config.provider) {
                     LlmProvider.Gemini -> {
                         parameter("key", apiKey)
-                        headers {
-                            remove(HttpHeaders.Authorization)
-                        }
+                        headers { remove(HttpHeaders.Authorization) }
                     }
-                    LlmProvider.Dashscope -> { // <--- 新增 Dashscope 逻辑
+                    LlmProvider.Dashscope -> {
                         config.appId?.takeIf { it.isNotBlank() }?.let {
                             header("X-DashScope-Appid", it)
                         }
                     }
-                    else -> { /* OpenAI, DeepSeek, Custom API 都使用默认的 Authorization Header */ }
+                    else -> {}
                 }
+                contentType(ContentType.Application.Json)
+                setBody(requestBody)
+            }.execute { response ->
+                val channel = response.bodyAsChannel()
+                while (!channel.isClosedForRead) {
+                    val line = channel.readUTF8Line() ?: continue
+                    if (line.isEmpty()) continue
 
+                    if (config.provider == LlmProvider.Gemini) {
+                        // Gemini stream returns an array of objects or individual objects
+                        // Simple parsing for text in Gemini response
+                        try {
+                            val cleanLine = line.trim().removePrefix("[").removeSuffix(",").removeSuffix("]")
+                            if (cleanLine.isNotEmpty()) {
+                                val geminiResp = json.decodeFromString<GeminiResponse>(cleanLine)
+                                geminiResp.candidates.firstOrNull()?.content?.parts?.firstOrNull()?.text?.let {
+                                    emit(it)
+                                }
+                            }
+                        } catch (e: Exception) {
+                            // Skip lines that aren't valid JSON chunks
+                        }
+                    } else {
+                        // OpenAI format: data: {"choices":[{"delta":{"content":"..."}}]}
+                        if (line.startsWith("data: ")) {
+                            val data = line.substring(6).trim()
+                            if (data == "[DONE]") break
+                            try {
+                                val chatResp = json.decodeFromString<ChatResponse>(data)
+                                chatResp.choices.firstOrNull()?.delta?.content?.let {
+                                    emit(it)
+                                }
+                            } catch (e: Exception) {
+                                // Skip
+                            }
+                        }
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            throw e
+        }
+    }
+
+    suspend fun sendChat(
+        messages: List<ApiMessage>,
+        config: LlmModel
+    ): String {
+        var apiUrl = config.customApiUrl.takeIf { it?.isNotBlank() == true } ?: getApiUrl(config.provider, false)
+        val apiKey = config.apiKey
+
+        if (apiUrl.isBlank() || apiKey.isBlank()) {
+            throw IllegalStateException("API URL 或 API Key 不能为空。")
+        }
+
+        if (config.provider == LlmProvider.Gemini) {
+            apiUrl = apiUrl.replace(modelNamePlaceholder, config.modelName)
+        }
+
+        val systemMessage = ApiMessage(role = "system", content = config.systemPrompt)
+        val fullMessages = listOf(systemMessage) + messages
+
+        val requestBody = ChatRequest(
+            model = config.modelName,
+            messages = fullMessages,
+            stream = false
+        )
+
+        try {
+            val response: ChatResponse = client.post(apiUrl) {
+                header("Authorization", "Bearer $apiKey")
+                when (config.provider) {
+                    LlmProvider.Gemini -> {
+                        parameter("key", apiKey)
+                        headers { remove(HttpHeaders.Authorization) }
+                    }
+                    LlmProvider.Dashscope -> {
+                        config.appId?.takeIf { it.isNotBlank() }?.let {
+                            header("X-DashScope-Appid", it)
+                        }
+                    }
+                    else -> {}
+                }
                 contentType(ContentType.Application.Json)
                 setBody(requestBody)
             }.body()
 
-            // 4. 提取响应文本
             return response.choices.firstOrNull()?.message?.content ?: "未能获取到 LLM API 响应。"
 
         } catch (e: Exception) {
-            val errorDetails = when (e) {
-                is ClientRequestException -> "API 错误: ${e.response.status.value}. 可能是 Key 无效或请求格式错误。"
-                is ServerResponseException -> "服务器错误: ${e.response.status.value}."
-                is UnknownHostException -> "网络连接失败: 无法解析主机名。"
-                else -> "未知错误: ${e.message}"
-            }
-            throw Exception(errorDetails, e)
+            throw e
         }
     }
 }

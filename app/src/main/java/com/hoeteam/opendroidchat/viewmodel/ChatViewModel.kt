@@ -76,19 +76,55 @@ class ChatViewModel(
                     )
                 }
 
-            try {
-                val llmResponseText = apiService.sendChat(apiMessages, currentModel)
+            val llmMessageId = System.currentTimeMillis() + 1
+            val initialLlmMessage = Message(
+                id = llmMessageId,
+                text = "",
+                sender = Sender.LLM,
+                isStreaming = true
+            )
+            _messages.update { it + initialLlmMessage }
 
-                val llmMessage = Message(text = llmResponseText, sender = Sender.LLM)
-                _messages.update { it + llmMessage }
+            var fullResponseText = ""
+
+            try {
+                apiService.sendChatStream(apiMessages, currentModel)
+                    .onStart { 
+                        // Start is handled by setting _isLoading.value = true before launch
+                    }
+                    .catch { e ->
+                        val errorMessage = "LLM API 响应出错: ${e.message ?: "未知错误"}"
+                        updateMessageText(llmMessageId, errorMessage, isStreaming = false)
+                        _errorState.emit("API 调用失败：${e.localizedMessage}")
+                        _isLoading.value = false
+                    }
+                    .collect { chunk ->
+                        if (fullResponseText.isEmpty()) {
+                            _isLoading.value = false // Hide loading indicator as soon as we get first chunk
+                        }
+                        fullResponseText += chunk
+                        updateMessageText(llmMessageId, fullResponseText, isStreaming = true)
+                    }
+                
+                // Stream finished successfully
+                updateMessageText(llmMessageId, fullResponseText, isStreaming = false)
 
             } catch (e: Exception) {
-                val errorMessage = "LLM API 响应出错: ${e.message ?: "未知错误"}"
-                val errorMsgForUi = Message(text = errorMessage, sender = Sender.LLM)
-                _messages.update { it + errorMsgForUi }
-                _errorState.emit("API 调用失败：${e.localizedMessage}")
+                _isLoading.value = false
             } finally {
                 _isLoading.value = false
+            }
+        }
+    }
+
+    private fun updateMessageText(id: Long, newText: String, isStreaming: Boolean) {
+        _messages.update { list ->
+            list.map { msg ->
+                if (msg.id == id) {
+                    msg.copy(text = newText, isStreaming = isStreaming)
+                } else {
+                    msg
+                }
             }
         }
     }
@@ -119,8 +155,7 @@ class ChatViewModel(
         }
     }
 }
-// ------------------- ViewModel Factory -------------------
-// 必须创建 Factory 来将 Repository 和 Service 传递给 ViewModel
+
 class ChatViewModelFactory(private val context: Context) : androidx.lifecycle.ViewModelProvider.Factory {
     override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(ChatViewModel::class.java)) {
