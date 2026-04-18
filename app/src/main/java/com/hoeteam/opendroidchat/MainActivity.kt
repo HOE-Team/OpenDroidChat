@@ -5,7 +5,6 @@ The source code is open-sourced under the MIT License.
 */
 package com.hoeteam.opendroidchat
 
-import android.content.Context
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -20,8 +19,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.navigation.NavController
-import androidx.navigation.NavDestination
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
@@ -33,12 +30,8 @@ import androidx.navigation.navArgument
 import androidx.navigation.NavType
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Column
-import com.hoeteam.opendroidchat.data.SettingsRepository
-import com.hoeteam.opendroidchat.network.LlmApiService
 import com.hoeteam.opendroidchat.ui.screens.ChatScreen
 import com.hoeteam.opendroidchat.ui.screens.ModelEditScreen
 import com.hoeteam.opendroidchat.ui.screens.ModelSettingsScreen
@@ -218,13 +211,15 @@ fun MainNavigation(themeViewModel: ThemeViewModel) {
             // 4. 应用程序设置界面
             composable(Destinations.SETTINGS_SCREEN) {
                 val isDarkTheme by themeViewModel.darkThemeEnabled.collectAsState()
+                val allowOtherChannelsUpdate by themeViewModel.allowOtherChannelsUpdate.collectAsState()
 
                 SettingsScreen(
                     // 传入主题状态和切换回调
                     currentDarkTheme = isDarkTheme,
                     onThemeToggle = { themeViewModel.setDarkTheme(it) },
-                    onNavigateToAbout = { navController.navigate(Destinations.ABOUT_SCREEN) }, // 导航到 About
-                    onNavigateToChat = { navigateToRootScreen(Destinations.CHAT_SCREEN) } // 导航到 Chat (通过 BNB 机制)
+                    allowOtherChannelsUpdate = allowOtherChannelsUpdate,
+                    onAllowOtherChannelsUpdateChange = { themeViewModel.setAllowOtherChannelsUpdate(it) },
+                    onNavigateToAbout = { navController.navigate(Destinations.ABOUT_SCREEN) }
                 )
             }
 

@@ -34,6 +34,7 @@ class SettingsRepository(private val context: Context) {
         val MODELS_LIST = stringPreferencesKey("llm_models_list")
         val CURRENT_MODEL_ID = stringPreferencesKey("current_model_id")
         val DARK_THEME_ENABLED = booleanPreferencesKey("dark_theme_enabled")
+        val ALLOW_OTHER_CHANNELS_UPDATE = booleanPreferencesKey("allow_other_channels_update")
     }
 
     private val gson = Gson()
@@ -98,6 +99,20 @@ class SettingsRepository(private val context: Context) {
     suspend fun setDarkTheme(isDark: Boolean) {
         dataStore.edit { preferences ->
             preferences[PreferencesKeys.DARK_THEME_ENABLED] = isDark
+        }
+    }
+
+    // ==================== 更新设置 ====================
+
+    // 8. 允许获取其他分发渠道的更新 Flow (默认开启)
+    val allowOtherChannelsUpdateFlow: Flow<Boolean> = dataStore.data.map { preferences ->
+        preferences[PreferencesKeys.ALLOW_OTHER_CHANNELS_UPDATE] ?: true
+    }
+
+    // 9. 设置允许获取其他渠道更新
+    suspend fun setAllowOtherChannelsUpdate(allow: Boolean) {
+        dataStore.edit { preferences ->
+            preferences[PreferencesKeys.ALLOW_OTHER_CHANNELS_UPDATE] = allow
         }
     }
 

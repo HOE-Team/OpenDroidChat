@@ -14,6 +14,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Update
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -29,8 +30,9 @@ import com.hoeteam.opendroidchat.network.VersionType
 fun SettingsScreen(
     currentDarkTheme: Boolean,
     onThemeToggle: (Boolean) -> Unit,
+    allowOtherChannelsUpdate: Boolean,
+    onAllowOtherChannelsUpdateChange: (Boolean) -> Unit,
     onNavigateToAbout: () -> Unit,
-    onNavigateToChat: () -> Unit,
 ) {
     val context = LocalContext.current
     val updateManager = remember { UpdateManager(context) }
@@ -44,34 +46,29 @@ fun SettingsScreen(
         }
     }
 
-    Column(
-        modifier = Modifier.fillMaxSize()
-    ) {
-        TopAppBar(
-            title = { Text("设置", fontWeight = FontWeight.Normal) },
-            windowInsets = WindowInsets(0, 0, 0, 0),
-        )
-
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("设置", fontWeight = FontWeight.Normal) },
+                windowInsets = WindowInsets(0, 0, 0, 0),
+            )
+        }
+    ) { paddingValues ->
         Column(
             modifier = Modifier
-                .fillMaxWidth()
+                .fillMaxSize()
+                .padding(paddingValues)
                 .verticalScroll(rememberScrollState())
         ) {
-            Spacer(modifier = Modifier.height(8.dp))
-
             val warningText = getWarningText()
             if (warningText != null) {
                 Card(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 16.dp)
+                        .padding(16.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer)
                 ) {
-                    Column(
-                        modifier = Modifier
-                            .background(MaterialTheme.colorScheme.errorContainer)
-                            .fillMaxWidth()
-                            .padding(16.dp)
-                    ) {
+                    Column(modifier = Modifier.padding(16.dp)) {
                         Icon(
                             Icons.Filled.Warning,
                             contentDescription = "警告",
@@ -87,48 +84,64 @@ fun SettingsScreen(
                 }
             }
 
-            Column(modifier = Modifier.padding(horizontal = 16.dp)) {
-                ListItem(
-                    headlineContent = { Text("深色模式") },
-                    leadingContent = {
-                        Icon(
-                            Icons.Filled.DarkMode,
-                            contentDescription = "深色模式",
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    },
-                    trailingContent = {
-                        Switch(
-                            checked = currentDarkTheme,
-                            onCheckedChange = onThemeToggle,
-                            enabled = true
-                        )
-                    },
-                    modifier = Modifier.fillMaxWidth()
-                )
+            // --- 外观分组 ---
+            SettingsGroupHeader("外观")
+            ListItem(
+                headlineContent = { Text("深色模式") },
+                leadingContent = {
+                    Icon(Icons.Filled.DarkMode, contentDescription = null)
+                },
+                trailingContent = {
+                    Switch(
+                        checked = currentDarkTheme,
+                        onCheckedChange = onThemeToggle
+                    )
+                }
+            )
 
-                HorizontalDivider()
+            HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
 
-                ListItem(
-                    headlineContent = { Text("关于 OpenDroidChat") },
-                    supportingContent = { Text("版本信息和项目详情") },
-                    leadingContent = {
-                        Icon(
-                            Icons.Filled.Info,
-                            contentDescription = "关于程序",
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    },
-                    trailingContent = { Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = null) },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable { onNavigateToAbout() }
-                )
+            // --- 更新分组 ---
+            SettingsGroupHeader("更新")
+            ListItem(
+                headlineContent = { Text("允许获取其他分发渠道的更新") },
+                supportingContent = { Text("开启后可获取 Stable/Beta 等其他渠道的更新推送") },
+                leadingContent = {
+                    Icon(Icons.Filled.Update, contentDescription = null)
+                },
+                trailingContent = {
+                    Switch(
+                        checked = allowOtherChannelsUpdate,
+                        onCheckedChange = onAllowOtherChannelsUpdateChange
+                    )
+                }
+            )
 
-                HorizontalDivider()
-            }
+            HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
 
-            Spacer(modifier = Modifier.height(16.dp))
+            // --- 杂项分组 ---
+            SettingsGroupHeader("杂项")
+            ListItem(
+                headlineContent = { Text("关于 OpenDroidChat") },
+                supportingContent = { Text("版本信息、开发团队及项目详情") },
+                leadingContent = {
+                    Icon(Icons.Filled.Info, contentDescription = null)
+                },
+                trailingContent = { Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = null) },
+                modifier = Modifier.clickable { onNavigateToAbout() }
+            )
+
+            Spacer(modifier = Modifier.height(32.dp))
         }
     }
+}
+
+@Composable
+fun SettingsGroupHeader(title: String) {
+    Text(
+        text = title,
+        style = MaterialTheme.typography.labelLarge,
+        color = MaterialTheme.colorScheme.primary,
+        modifier = Modifier.padding(start = 16.dp, top = 24.dp, bottom = 8.dp)
+    )
 }

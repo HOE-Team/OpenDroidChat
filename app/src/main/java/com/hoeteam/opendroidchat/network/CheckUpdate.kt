@@ -7,6 +7,7 @@ package com.hoeteam.opendroidchat.network
 
 import android.content.Context
 import android.content.pm.PackageManager
+import com.hoeteam.opendroidchat.data.SettingsRepository
 import io.ktor.client.*
 import io.ktor.client.call.*
 import io.ktor.client.engine.android.*
@@ -16,11 +17,14 @@ import io.ktor.client.request.*
 import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
 import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.serialization.json.Json
 import java.net.UnknownHostException
 import kotlin.coroutines.coroutineContext
 
 class UpdateChecker(private val context: Context) {
+
+    private val settingsRepository = SettingsRepository(context)
 
     companion object {
         private const val GITHUB_API_URL = "https://api.github.com/repos/HOE-Team/OpenDroidChat/releases"
@@ -41,6 +45,18 @@ class UpdateChecker(private val context: Context) {
     }
 
     /**
+     * 获取用于比较的清洁本地版本号
+     */
+    private fun getCleanLocalVersion(): String {
+        val rawVersion = getCurrentVersion()
+        return if (rawVersion.count { it == '-' } >= 2) {
+            rawVersion.substringBeforeLast("-")
+        } else {
+            rawVersion
+        }
+    }
+
+    /**
      * 获取当前版本类型
      */
     fun getCurrentVersionType(): VersionType {
@@ -48,46 +64,13 @@ class UpdateChecker(private val context: Context) {
     }
 
     /**
-     * 检查是否有新版本 - 根据当前版本类型自动检查对应类型的更新
+     * 检查更新逻辑
      */
     suspend fun checkForUpdates(): UpdateCheckResult {
-        val currentVersion = getCurrentVersion()
-        val currentType = VersionType.fromVersion(currentVersion)
+        val rawLocalVersion = getCurrentVersion()
+        val cleanLocalVersion = getCleanLocalVersion()
+        val allowOtherChannels = settingsRepository.allowOtherChannelsUpdateFlow.firstOrNull() ?: true
 
-        return checkForUpdates(currentType)
-    }
-
-    /**
-     * 检查是否有新版本 - 指定要检查的版本类型
-     */
-    suspend fun checkForUpdates(targetType: VersionType): UpdateCheckResult {
-        val currentVersion = getCurrentVersion()
-        val currentParsed = VersionParser.parse(currentVersion)
-
-        if (currentParsed == null) {
-            return UpdateCheckResult(
-                hasUpdate = false,
-                latestRelease = null,
-                currentVersion = currentVersion,
-                latestVersion = null,
-                versionType = targetType,
-                error = "无法解析当前版本格式: $currentVersion"
-            )
-        }
-
-        // 如果是 Nightly 版本，返回特殊提示
-        if (targetType == VersionType.NIGHTLY) {
-            return UpdateCheckResult(
-                hasUpdate = false,
-                latestRelease = null,
-                currentVersion = currentVersion,
-                latestVersion = null,
-                versionType = targetType,
-                error = "Nightly版本通过GitHub Actions自动构建，请访问Actions页面下载最新构建"
-            )
-        }
-
-        // 创建新的 HttpClient 实例（仅用于 Beta/Stable）
         val client = HttpClient(Android) {
             install(ContentNegotiation) {
                 json(Json {
@@ -103,104 +86,50 @@ class UpdateChecker(private val context: Context) {
         }
 
         return try {
-            // 检查协程是否被取消
             coroutineContext.ensureActive()
-
-            // 获取所有 Releases
             val releases: List<GitHubRelease> = client.get(GITHUB_API_URL) {
                 header("Accept", "application/vnd.github.v3+json")
             }.body()
-
-            // 检查协程是否被取消
             coroutineContext.ensureActive()
 
-            // 根据目标类型过滤版本（大小写不敏感）
-            val filteredReleases = when (targetType) {
-                VersionType.NIGHTLY -> emptyList() // Nightly 不检查 Releases
-                VersionType.BETA -> releases.filter {
-                    it.tag_name.lowercase().startsWith("beta")
-                }
-                VersionType.STABLE -> releases.filter {
-                    it.tag_name.lowercase().startsWith("stable")
-                }
+            if (releases.isEmpty()) {
+                return UpdateCheckResult(false, null, rawLocalVersion, null, getCurrentVersionType(), "未找到任何发布版本")
             }
 
-            if (filteredReleases.isEmpty()) {
-                return UpdateCheckResult(
-                    hasUpdate = false,
-                    latestRelease = null,
-                    currentVersion = currentVersion,
-                    latestVersion = null,
-                    versionType = targetType,
-                    error = "未找到 ${targetType.name.lowercase()} 版本"
-                )
+            val latestRelease = releases.first()
+            val remoteTag = latestRelease.tag_name.trim()
+
+            val currentParsed = VersionParser.parse(cleanLocalVersion)
+            val latestParsed = VersionParser.parse(remoteTag)
+
+            val hasUpdate = if (allowOtherChannels) {
+                remoteTag != cleanLocalVersion.trim()
+            } else {
+                if (currentParsed != null && latestParsed != null && latestParsed.versionType == currentParsed.versionType) {
+                    latestParsed.isNewerThan(currentParsed)
+                } else false
             }
-
-            // 按发布时间排序
-            val sortedReleases = filteredReleases.sortedByDescending { it.published_at }
-            val latestRelease = sortedReleases.first()
-
-            // 解析最新版本
-            val latestParsed = VersionParser.parse(latestRelease.tag_name)
-
-            if (latestParsed == null) {
-                return UpdateCheckResult(
-                    hasUpdate = false,
-                    latestRelease = null,
-                    currentVersion = currentVersion,
-                    latestVersion = latestRelease.tag_name,
-                    versionType = targetType,
-                    error = "无法解析最新版本格式: ${latestRelease.tag_name}"
-                )
-            }
-
-            // 比较版本
-            val hasUpdate = latestParsed.isNewerThan(currentParsed)
 
             UpdateCheckResult(
                 hasUpdate = hasUpdate,
                 latestRelease = latestRelease,
-                currentVersion = currentVersion,
-                latestVersion = latestRelease.tag_name,
-                versionType = targetType,
+                currentVersion = rawLocalVersion,
+                latestVersion = remoteTag,
+                versionType = latestParsed?.versionType ?: VersionType.fromVersion(remoteTag),
                 error = null
             )
 
-        } catch (e: CancellationException) {
-            // 重新抛出取消异常，让上层处理
-            throw e
         } catch (e: Exception) {
-            UpdateCheckResult(
-                hasUpdate = false,
-                latestRelease = null,
-                currentVersion = currentVersion,
-                latestVersion = null,
-                versionType = targetType,
-                error = when (e) {
-                    is ClientRequestException -> "网络请求错误: ${e.response.status.value}"
-                    is UnknownHostException -> "网络连接失败，请检查网络"
-                    else -> "检查更新失败: ${e.message}"
-                }
-            )
+            if (e is CancellationException) throw e
+            UpdateCheckResult(false, null, rawLocalVersion, null, getCurrentVersionType(), "检查更新失败: ${e.message}")
         } finally {
             client.close()
         }
     }
 
-    /**
-     * 获取 GitHub Releases 页面 URL
-     */
+    suspend fun checkForUpdates(targetType: VersionType): UpdateCheckResult = checkForUpdates()
+
     fun getReleasesPageUrl(): String = GITHUB_RELEASES_PAGE
-
-    /**
-     * 获取 GitHub Actions 页面 URL（用于 Nightly 版本）
-     */
     fun getActionsPageUrl(): String = GITHUB_ACTIONS_URL
-
-    /**
-     * 获取指定版本的下载页面 URL
-     */
-    fun getVersionPageUrl(versionTag: String): String {
-        return "https://github.com/HOE-Team/OpenDroidChat/releases/tag/$versionTag"
-    }
+    fun getVersionPageUrl(versionTag: String): String = "https://github.com/HOE-Team/OpenDroidChat/releases/tag/$versionTag"
 }

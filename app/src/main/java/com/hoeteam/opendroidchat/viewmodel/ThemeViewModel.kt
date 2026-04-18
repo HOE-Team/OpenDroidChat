@@ -10,23 +10,31 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.hoeteam.opendroidchat.data.SettingsRepository
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 class ThemeViewModel(private val settingsRepository: SettingsRepository) : ViewModel() {
     
-    // 主题状态 Flow，初始值为 false
+    // 主题状态 Flow
     val darkThemeEnabled: StateFlow<Boolean> = settingsRepository.darkThemeFlow
         .stateIn(
             scope = viewModelScope,
-            started = kotlinx.coroutines.flow.SharingStarted.WhileSubscribed(5000),
+            started = SharingStarted.WhileSubscribed(5000),
             initialValue = false
+        )
+
+    // 更新渠道状态 Flow
+    val allowOtherChannelsUpdate: StateFlow<Boolean> = settingsRepository.allowOtherChannelsUpdateFlow
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = true
         )
 
     /**
      * 切换主题
-     * @param isDark 是否使用深色主题
      */
     fun setDarkTheme(isDark: Boolean) {
         viewModelScope.launch {
@@ -35,12 +43,11 @@ class ThemeViewModel(private val settingsRepository: SettingsRepository) : ViewM
     }
 
     /**
-     * 切换主题状态（当前状态的反向）
+     * 设置是否允许其他渠道更新
      */
-    fun toggleTheme() {
+    fun setAllowOtherChannelsUpdate(allow: Boolean) {
         viewModelScope.launch {
-            val currentState = darkThemeEnabled.value
-            settingsRepository.setDarkTheme(!currentState)
+            settingsRepository.setAllowOtherChannelsUpdate(allow)
         }
     }
 }
