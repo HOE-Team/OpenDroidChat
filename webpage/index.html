@@ -73,19 +73,25 @@
       position: relative;
     }
 
-    .hero-image {
+    .hero-card-bottom-crop img {
+      width: 100%;
+      height: auto; 
+      display: block;
+      object-fit: cover;
+    }
+
+    /* 轮播样式 */
+    .carousel-image {
       position: absolute;
       top: 0;
       left: 0;
       width: 100%;
-      height: auto;
+      height: 100%;
       object-fit: cover;
-      opacity: 0;
       transition: opacity 1s ease-in-out;
     }
-
-    .hero-image.active {
-      opacity: 1;
+    .next {
+      opacity: 0;
     }
 
     /* 4. 页脚字符 */
@@ -177,8 +183,8 @@
         
         <div class="hero-card-wrapper">
           <div class="hero-card-bottom-crop">
-            <img src="images/intro.png" alt="OpenDroidChat 介绍图" class="hero-image active">
-            <img src="images/intro2.png" alt="OpenDroidChat 介绍图" class="hero-image next">
+            <img src="images/intro.png" alt="OpenDroidChat 介绍图" class="carousel-image current">
+            <img src="images/intro2.png" alt="OpenDroidChat 介绍图" class="carousel-image next">
           </div>
         </div>
       </div>

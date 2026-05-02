@@ -17,32 +17,22 @@ document.addEventListener('DOMContentLoaded',function(){
     })
   }
 
-  // 图片轮播功能
-  var activeImg = document.querySelector('.hero-image.active');
-  var nextImg = document.querySelector('.hero-image.next');
-  if(activeImg && nextImg){
-    var images = ['images/intro.png', 'images/intro2.png', 'images/intro3.png', 'images/intro4.png'];
-    var currentIndex = 0;
-    setInterval(function(){
-      // 先更新next的src为下一张
-      var nextIndex = (currentIndex + 1) % images.length;
-      nextImg.src = images[nextIndex];
-      // 然后淡出active，淡入next
-      activeImg.style.opacity = '0';
-      nextImg.style.opacity = '1';
-      // 等待动画完成后交换
-      setTimeout(function(){
-        activeImg.classList.remove('active');
-        activeImg.classList.add('next');
-        nextImg.classList.remove('next');
-        nextImg.classList.add('active');
-        // 更新索引
-        currentIndex = nextIndex;
-        // 交换引用
-        var temp = activeImg;
-        activeImg = nextImg;
-        nextImg = temp;
-      }, 1000);
-    }, 5000);
+  // 轮播逻辑
+  var currentImage = document.querySelector('.carousel-image.current');
+  var nextImage = document.querySelector('.carousel-image.next');
+  var images = ['images/intro.png', 'images/intro2.png', 'images/intro3.png', 'images/intro4.png'];
+  var currentIndex = 0;
+
+  function nextSlide() {
+    var nextIndex = (currentIndex + 1) % images.length;
+    nextImage.src = images[nextIndex];
+    nextImage.style.opacity = '1';
+    setTimeout(function() {
+      currentImage.src = images[nextIndex];
+      nextImage.style.opacity = '0';
+      currentIndex = nextIndex;
+    }, 1000); // 过渡时间1秒
   }
+
+  setInterval(nextSlide, 5000); // 每5秒切换
 });
