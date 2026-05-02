@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>下载 · OpenDroidChat</title>
+  <link rel="stylesheet" href="css/styles.css">
+  <link rel="icon" href="images/logo.png">
+</head>
+<body>
+  <!-- Material Design Top App Bar -->
+  <header class="top-app-bar">
+    <a class="brand" href="index.html">
+      <img src="images/logo.png" alt="logo" class="logo" onerror="this.onerror=null;this.src='assets/logo.svg'">
+      <div class="brand-text">
+        <h1>OpenDroidChat</h1>
+        <p>一款为 Android 6+ 设计的开源、轻量级 LLM API 聊天客户端</p>
+      </div>
+    </a>
+    <a class="github-btn" href="https://github.com/HOE-Team/OpenDroidChat" target="_blank">
+      <img src="assets/github.svg" alt="GitHub"> GitHub
+    </a>
+  </header>
+
+  <main>
+    <section class="section">
+      <div class="page-container">
+        <h2 class="section-title">下载</h2>
+
+        <div class="card-grid">
+          <div class="material-card">
+            <h4><img src="assets/download.svg" alt="" style="width:24px;height:24px;vertical-align:middle;margin-right:6px"> 直接下载 APK</h4>
+            <p style="color:var(--md-sys-color-on-surface-variant);margin:0 0 16px">从 Releases 页面下载 APK 并在设备上安装。</p>
+            <a href="https://github.com/HOE-Team/OpenDroidChat/releases" target="_blank" style="display:inline-flex;align-items:center;gap:8px;text-decoration:none;padding:10px 20px;border-radius:100px;background:var(--md-sys-color-primary);color:var(--md-sys-color-on-primary);border:none;font-weight:500;font-size:var(--md-sys-typescale-label-large-size)">
+              <img src="assets/download.svg" alt="" style="width:20px;height:20px;filter:brightness(10)"> 前往 Releases 页面
+            </a>
+          </div>
+
+          <div class="material-card">
+            <h4><img src="assets/build.svg" alt="" style="width:24px;height:24px;vertical-align:middle;margin-right:6px"> 从源代码构建</h4>
+            <p style="color:var(--md-sys-color-on-surface-variant);margin:0 0 16px">确保已安装 Android Studio 或 Gradle。</p>
+            <pre class="code-block" style="margin:0"># 克隆并构建（Windows）
+git clone https://github.com/HOE-Team/OpenDroidChat.git
+cd OpenDroidChat
+gradlew.bat build
+
+# 构建成功后，APK 位于 app/build/outputs/apk/</pre>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Material Design Footer -->
+  <footer class="site-footer">
+    <div class="container">
+      <span>版权所有 © 2025-2026 HOE Team · MIT License · 使用了<a href="https://fonts.google.com/specimen/Plus+Jakarta+Sans/license?preview.script=Latn">OFL协议</a>开源的Plus Jakarta Sans字体</span>
+      <a href="credits.html">下一页 <img src="assets/arrow_back.svg" alt="" style="width:20px;height:20px;vertical-align:middle;margin-left:4px;transform:scaleX(-1)"></a>
+    </div>
+  </footer>
+
+  <script src="js/main.js"></script>
+</body>
+</html>

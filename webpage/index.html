@@ -1,0 +1,182 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>OpenDroidChat — 开源 Android LLM 聊天客户端</title>
+  <link rel="stylesheet" href="css/styles.css">
+  <link rel="icon" href="images/logo.png">
+  <style>
+    /* 1. 基础布局：桌面端全屏锁定 */
+    html, body { 
+      height: 100vh; 
+      margin: 0; 
+      display: flex; 
+      flex-direction: column; 
+      overflow: hidden; 
+    }
+    
+    main { 
+      flex: 1; 
+      display: flex; 
+      flex-direction: column; 
+      position: relative; 
+    }
+
+    .page-container {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 0 24px;
+      width: 100%;
+      flex: 1;
+      display: flex;
+    }
+
+    .hero-grid {
+      display: grid;
+      grid-template-columns: 1fr 360px;
+      gap: 48px;
+      width: 100%;
+      align-items: center; 
+    }
+
+    /* 2. 按钮样式补充 (从 index_4.html 还原) */
+    .material-btn-outline {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      text-decoration: none;
+      padding: 12px 24px;
+      border-radius: 100px;
+      background: transparent;
+      color: var(--md-sys-color-primary);
+      border: 1px solid var(--md-sys-color-outline);
+      font-weight: 500;
+      font-size: var(--md-sys-typescale-label-large-size);
+    }
+
+    /* 3. 图片裁切逻辑 */
+    .hero-card-wrapper {
+      height: 100%;
+      display: flex;
+      align-items: flex-end; 
+    }
+
+    .hero-card-bottom-crop {
+      height: 75vh;
+      width: 100%;
+      overflow: hidden; 
+      background: var(--md-sys-color-surface-variant);
+      border-radius: 24px 24px 0 0;
+      display: flex;
+      align-items: flex-start; 
+    }
+
+    .hero-card-bottom-crop img {
+      width: 100%;
+      height: auto; 
+      display: block;
+      object-fit: cover;
+    }
+
+    /* 4. 页脚字符 */
+    .char-footer {
+      position: absolute;
+      bottom: 24px;
+      left: 24px;
+      font-size: 12px;
+      color: var(--md-sys-color-on-surface-variant);
+      opacity: 0.8;
+      z-index: 10;
+    }
+    .char-footer a { color: inherit; text-decoration: none; font-weight: 500; }
+
+    /* 5. 移动端适配 */
+    @media (max-width: 850px) {
+      html, body {
+        height: auto;
+        overflow-y: auto;
+      }
+      
+      .hero-grid {
+        grid-template-columns: 1fr;
+        gap: 32px;
+        padding-bottom: 0;
+      }
+
+      .hero-content {
+        padding-top: 40px;
+        text-align: center;
+      }
+
+      .hero-actions {
+        justify-content: center;
+        display: flex;
+        flex-wrap: wrap; /* 防止按钮太挤 */
+        gap: 12px;
+      }
+
+      .hero-card-wrapper {
+        height: auto;
+      }
+
+      .hero-card-bottom-crop {
+        height: 55vh; /* 适当增加高度以展示更多图片 */
+      }
+
+      .char-footer {
+        position: static;
+        padding: 32px 24px;
+        text-align: center;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header class="top-app-bar">
+    <a class="brand" href="index.html">
+      <img src="images/logo.png" alt="logo" class="logo" onerror="this.onerror=null;this.src='assets/logo.svg'">
+      <div class="brand-text">
+        <h1>OpenDroidChat</h1>
+        <p>一款为 Android 6+ 设计的开源、轻量级 LLM API 聊天客户端</p>
+      </div>
+    </a>
+    <a class="github-btn" href="https://github.com/HOE-Team/OpenDroidChat" target="_blank">
+      <img src="assets/github.svg" alt="GitHub"> GitHub
+    </a>
+  </header>
+
+  <main>
+    <div class="page-container">
+      <div class="hero-grid">
+        <div class="hero-content">
+          <h2 class="hero-title">轻量 · 安全 · 可接入多种 LLM API</h2>
+          <p class="hero-subtitle">原生 Compose 界面，支持 Markdown 渲染、流式传输与多家 LLM 提供商。适用于 Android 6.0+。</p>
+          <div class="hero-actions">
+            <!-- 补全 下载 APK 按钮 -->
+            <a class="material-card" href="https://github.com/HOE-Team/OpenDroidChat/releases" target="_blank" style="display:inline-flex;align-items:center;gap:8px;text-decoration:none;padding:12px 24px;border-radius:100px;background:var(--md-sys-color-primary);color:var(--md-sys-color-on-primary);font-weight:500;">
+              下载 APK
+            </a>
+            <!-- 补全 开始了解 按钮 -->
+            <a class="material-btn-outline" href="program.html">
+              开始了解
+            </a>
+          </div>
+        </div>
+        
+        <div class="hero-card-wrapper">
+          <div class="hero-card-bottom-crop">
+            <img src="images/intro.jpg" alt="OpenDroidChat 介绍图">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <footer class="char-footer">
+      <span>© 2025-2026 HOE Team · 使用了<a href="https://fonts.google.com/specimen/Plus+Jakarta+Sans/license?preview.script=Latn">OFL协议</a>开源的Plus Jakarta Sans字体</span>
+    </footer>
+  </main>
+
+  <script src="js/main.js"></script>
+</body>
+</html>
