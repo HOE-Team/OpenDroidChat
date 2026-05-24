@@ -1,5 +1,9 @@
 <h1 align="center">OpenDroidChat</h1>
 
+<div align="center">
+    <img width="150" src="images/odc-logo.png" alt="项目Logo">
+</div>
+
 <h3 align="center">一款为 Android 6+ 设计的开源、轻量级 LLM API 聊天客户端</h3>
 
 <p align="center"><s>哇还有API额度浪费装置</s></p>
@@ -135,4 +139,9 @@ project/
 > 4. **作者不提供任何保证**，如果使用该软件导致任何问题，你需要自己承担风险。
 
 版权所有 © 2025-2026 HOE Team，保留所有权利。  
-应用图标由[ChatGPT[↗]](https://chatgpt.com)生成
+
+> [!WARNING]
+> ### 著作权声明
+> OpenDroidChat Geometry 系列徽标为 HOE Team 所有，受法律保护。未经明确书面授权，不得用于商业用途或进行修改后使用。 
+> 旧式应用图标（OpenDroidChat Bugdroid-Say）由[ChatGPT[↗]](https://chatgpt.com)生成，使用CC BY-NC-SA协议开放
+
