@@ -19,6 +19,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.hoeteam.opendroidchat.ui.components.ChatInput
@@ -66,7 +67,6 @@ fun ChatScreen(
                 val viewportEnd = layoutInfo.viewportEndOffset
                 
                 // 将缓冲区扩大到 200dp，防止流式输出内容剧增导致判定“脱离”
-                // 只有当最后一条消息的底部明显离开视口（超过200dp）时，才认为用户已经向上翻阅了
                 isLastItem && itemBottom <= viewportEnd + 200
             }
         }
@@ -74,15 +74,12 @@ fun ChatScreen(
 
     // 自动滚动置底逻辑
     LaunchedEffect(messages, isLoading) {
-        // 只有在用户没有手动拖拽列表时，才进行自动滚动
-        // 使用 isDragged 代替 isScrollInProgress 避免了由于自动滚动动画导致的自身拦截
         if (isDragged) return@LaunchedEffect
 
         if (messages.isNotEmpty() && isAtBottom) {
             val lastIndex = if (isLoading) messages.size else messages.size - 1
             if (lastIndex >= 0) {
                 val lastMessage = messages.lastOrNull()
-                // 流式传输中，使用无动画的 scrollToItem 配合巨大偏移实现强制置底
                 if (lastMessage?.isStreaming == true) {
                     lazyListState.scrollToItem(lastIndex, scrollOffset = 100000)
                 } else {
@@ -110,8 +107,13 @@ fun ChatScreen(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
-                title = { Text(currentModel?.name ?: "LLM Chat") },
-                windowInsets = WindowInsets(0, 0, 0, 0),
+                title = { 
+                    Text(
+                        currentModel?.name ?: "LLM Chat",
+                        fontWeight = FontWeight.SemiBold
+                    ) 
+                },
+                //windowInsets = WindowInsets(0, 0, 0, 0),
             )
         },
         bottomBar = {
@@ -130,7 +132,6 @@ fun ChatScreen(
                     if (lastVisibleItem == null) {
                         messages.isNotEmpty()
                     } else {
-                        // 当最后一条消息的底部距离视口底部超过 150dp 时显示 FAB
                         lastVisibleItem.index < layoutInfo.totalItemsCount - 1 ||
                         lastVisibleItem.offset + lastVisibleItem.size > layoutInfo.viewportEndOffset + 150
                     }
@@ -142,11 +143,10 @@ fun ChatScreen(
                 enter = scaleIn() + fadeIn(),
                 exit = scaleOut() + fadeOut()
             ) {
-                FloatingActionButton(
+                SmallFloatingActionButton(
                     onClick = {
                         scope.launch {
                             if (messages.isNotEmpty()) {
-                                // 点击 FAB 强行滚回底部，由于 scrollOffset 很大，它会确保完全置底
                                 lazyListState.animateScrollToItem(
                                     if (isLoading) messages.size else messages.size - 1,
                                     scrollOffset = 100000
@@ -154,9 +154,10 @@ fun ChatScreen(
                             }
                         }
                     },
-                    containerColor = MaterialTheme.colorScheme.primaryContainer,
-                    contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                    modifier = Modifier.padding(bottom = 16.dp)
+                    containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                    contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                    modifier = Modifier.padding(bottom = 16.dp),
+                    shape = MaterialTheme.shapes.extraLarge
                 ) {
                     Icon(Icons.Default.ArrowDownward, contentDescription = "滚动到底部")
                 }
@@ -167,8 +168,8 @@ fun ChatScreen(
         Box(modifier = Modifier.fillMaxSize().padding(paddingValues)) {
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(10.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
+                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
                 state = lazyListState
             ) {
                 items(messages, key = { it.id }) { message ->
@@ -194,7 +195,9 @@ fun ChatScreen(
                 }
                 if (isLoading) {
                     item(key = "loading_indicator") {
-                        LoadingIndicator()
+                        Box(modifier = Modifier.padding(vertical = 8.dp)) {
+                            LoadingIndicator()
+                        }
                     }
                 }
             }

@@ -12,8 +12,10 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.hoeteam.opendroidchat.ui.components.ModelListItem
@@ -33,30 +35,61 @@ fun ModelSettingsScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("LLM API 实例管理") },
-                windowInsets = WindowInsets(0, 0, 0, 0),
+                title = { Text("LLM API 实例管理", fontWeight = FontWeight.SemiBold) },
+                //windowInsets = WindowInsets(0, 0, 0, 0),
             )
         },
         floatingActionButton = {
-            FloatingActionButton(onClick = { onNavigateToEditModel(null) }) {
-                Icon(Icons.Filled.Add, contentDescription = "添加新实例")
+            LargeFloatingActionButton(
+                onClick = { onNavigateToEditModel(null) },
+                containerColor = MaterialTheme.colorScheme.primaryContainer,
+                contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                shape = MaterialTheme.shapes.extraLarge
+            ) {
+                Icon(Icons.Filled.Add, contentDescription = "添加新实例", modifier = Modifier.size(30.dp))
             }
         }
     ) { paddingValues ->
-        LazyColumn(
-            modifier = Modifier
-                .padding(paddingValues)
-                .fillMaxSize()
-        ) {
-            if (allModels.isEmpty()) {
-                item {
-                    Text(
-                        "点击右下角的 '+' 添加您的第一个 LLM API 实例。",
-                        modifier = Modifier.padding(16.dp),
-                        style = MaterialTheme.typography.bodyLarge
+        if (allModels.isEmpty()) {
+            Box(
+                modifier = Modifier
+                    .padding(paddingValues)
+                    .fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                OutlinedCard(
+                    modifier = Modifier.padding(24.dp),
+                    shape = MaterialTheme.shapes.extraLarge,
+                    colors = CardDefaults.outlinedCardColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceContainer
                     )
+                ) {
+                    Column(
+                        modifier = Modifier.padding(24.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text(
+                            "暂无配置",
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            "点击右下角的 '+' 添加您的第一个 LLM API 实例。",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
                 }
-            } else {
+            }
+        } else {
+            LazyColumn(
+                modifier = Modifier
+                    .padding(paddingValues)
+                    .fillMaxSize(),
+                contentPadding = PaddingValues(top = 8.dp, bottom = 80.dp),
+                verticalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
                 items(allModels, key = { it.id }) { model ->
                     ModelListItem(
                         model = model,
@@ -66,7 +99,6 @@ fun ModelSettingsScreen(
                         onDelete = { viewModel.deleteModel(it) },
                         allModelsCount = allModels.size
                     )
-                    HorizontalDivider(color = MaterialTheme.colorScheme.surfaceVariant)
                 }
             }
         }

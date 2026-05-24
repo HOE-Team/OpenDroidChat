@@ -78,36 +78,34 @@ fun LicenseScreen(
         )
     )
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp)
-    ) {
-        TopAppBar(
-            title = {
-                Column(horizontalAlignment = Alignment.Start) {
-                    Text("开放源代码许可", fontWeight = FontWeight.Normal)
-                    Text(
-                        text = "OpenDroidChat使用了以下开源库",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(top = 2.dp)
-                    )
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = {
+                    Column(horizontalAlignment = Alignment.Start) {
+                        Text("开放源代码许可", fontWeight = FontWeight.SemiBold)
+                        Text(
+                            text = "OpenDroidChat 使用了以下开源库",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                },
+                //windowInsets = WindowInsets(0, 0, 0, 0),
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "返回")
+                    }
                 }
-            },
-            windowInsets = WindowInsets(0, 0, 0, 0),
-            navigationIcon = {
-                IconButton(onClick = onBack) {
-                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "返回")
-                }
-            }
-        )
-
+            )
+        }
+    ) { paddingValues ->
         LazyColumn(
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = 16.dp)
+                .fillMaxSize()
+                .padding(paddingValues),
+            contentPadding = PaddingValues(vertical = 12.dp)
         ) {
             items(libraries) { library ->
                 LibraryCard(library = library)

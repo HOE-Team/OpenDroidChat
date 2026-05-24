@@ -5,7 +5,6 @@ The source code is open-sourced under the MIT License.
 */
 package com.hoeteam.opendroidchat.ui.screens
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -16,6 +15,7 @@ import androidx.compose.material.icons.filled.Build
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Error
+import androidx.compose.material.icons.filled.InsertDriveFile
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Update
 import androidx.compose.material3.*
@@ -99,308 +99,350 @@ fun AboutScreen(
         }
     }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp)
-            .verticalScroll(rememberScrollState())
-    ) {
-        TopAppBar(
-            title = { Text("关于", fontWeight = FontWeight.Normal) },
-            windowInsets = WindowInsets(0, 0, 0, 0),
-            navigationIcon = {
-                IconButton(onClick = onBack) {
-                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "返回")
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("关于", fontWeight = FontWeight.SemiBold) },
+                //windowInsets = WindowInsets(0, 0, 0, 0),
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "返回")
+                    }
                 }
-            }
-        )
-
-        Card(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = 16.dp)
-        ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp)
-            ) {
-                Text(
-                    text = "关于 OpenDroidChat",
-                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                    modifier = Modifier.padding(bottom = 8.dp)
-                )
-                Text(
-                    text = "OpenDroidChat 是一款适用于 Android 6(API23)+ 的 LLM API 聊天客户端，UI界面使用了Google的Material Design 3设计框架。",
-                    style = MaterialTheme.typography.bodyMedium
-                )
-            }
+            )
         }
-
-        Card(
+    ) { paddingValues ->
+        Column(
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = 16.dp)
+                .fillMaxSize()
+                .padding(paddingValues)
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 16.dp, vertical = 8.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp)
+            OutlinedCard(
+                modifier = Modifier.fillMaxWidth(),
+                shape = MaterialTheme.shapes.extraLarge,
+                colors = CardDefaults.outlinedCardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceContainer
+                ),
+                border = CardDefaults.outlinedCardBorder().copy(width = 0.5.dp)
             ) {
-                Text(
-                    text = "版本信息",
-                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                    modifier = Modifier.padding(bottom = 8.dp)
-                )
-
-                Text(
-                    text = "Version $currentVersion",
-                    style = MaterialTheme.typography.bodyMedium
-                )
-
-                Surface(
-                    color = MaterialTheme.colorScheme.primaryContainer,
-                    shape = MaterialTheme.shapes.small,
-                    modifier = Modifier.padding(top = 4.dp)
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(20.dp)
                 ) {
                     Text(
-                        text = getVersionTypeText(),
-                        color = MaterialTheme.colorScheme.onPrimaryContainer,
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
-                        style = MaterialTheme.typography.labelSmall
+                        text = "关于 OpenDroidChat",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = "OpenDroidChat 是一款适用于 Android 6(API23)+ 的 LLM API 聊天客户端，UI界面使用了 Google 的 Material 3 Expressive 设计规范进行重构。",
+                        style = MaterialTheme.typography.bodyMedium
                     )
                 }
+            }
 
-                Spacer(modifier = Modifier.height(12.dp))
+            OutlinedCard(
+                modifier = Modifier.fillMaxWidth(),
+                shape = MaterialTheme.shapes.extraLarge,
+                colors = CardDefaults.outlinedCardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceContainer
+                ),
+                border = CardDefaults.outlinedCardBorder().copy(width = 0.5.dp)
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(20.dp)
+                ) {
+                    Text(
+                        text = "版本信息",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary
+                    )
 
-                when {
-                    currentVersionType == VersionType.NIGHTLY -> {
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(
-                            text = "Nightly版本通过GitHub Actions自动构建",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.padding(bottom = 8.dp)
+                            text = "Version $currentVersion",
+                            style = MaterialTheme.typography.bodyLarge,
+                            fontWeight = FontWeight.Medium
                         )
-
-                        Spacer(modifier = Modifier.height(8.dp))
-
-                        Column(
-                            verticalArrangement = Arrangement.spacedBy(8.dp),
-                            modifier = Modifier.fillMaxWidth()
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Surface(
+                            color = MaterialTheme.colorScheme.primaryContainer,
+                            shape = MaterialTheme.shapes.medium
                         ) {
-                            Button(
-                                onClick = { updateManager.openActionsPage() },
-                                modifier = Modifier.fillMaxWidth(),
-                                colors = ButtonDefaults.buttonColors(
-                                    containerColor = MaterialTheme.colorScheme.primary,
-                                    contentColor = MaterialTheme.colorScheme.onPrimary
-                                )
-                            ) {
-                                Icon(Icons.Default.Build, contentDescription = null)
-                                Spacer(modifier = Modifier.width(4.dp))
-                                Text("查看Actions构建")
-                            }
+                            Text(
+                                text = getVersionTypeText(),
+                                color = MaterialTheme.colorScheme.onPrimaryContainer,
+                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
+                                style = MaterialTheme.typography.labelSmall
+                            )
+                        }
+                    }
 
-                            OutlinedButton(
-                                onClick = { checkForUpdates() },
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    when {
+                        currentVersionType == VersionType.NIGHTLY -> {
+                            Text(
+                                text = "Nightly版本通过 GitHub Actions 自动构建",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+
+                            Spacer(modifier = Modifier.height(16.dp))
+
+                            Row(
+                                horizontalArrangement = Arrangement.spacedBy(12.dp),
                                 modifier = Modifier.fillMaxWidth()
                             ) {
-                                Icon(Icons.Default.Refresh, contentDescription = null)
-                                Spacer(modifier = Modifier.width(4.dp))
+                                Button(
+                                    onClick = { updateManager.openActionsPage() },
+                                    modifier = Modifier.weight(1f),
+                                    shape = MaterialTheme.shapes.large
+                                ) {
+                                    Icon(Icons.Default.Build, contentDescription = null, modifier = Modifier.size(18.dp))
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Text("Actions构建")
+                                }
+
+                                OutlinedButton(
+                                    onClick = { checkForUpdates() },
+                                    modifier = Modifier.weight(1f),
+                                    shape = MaterialTheme.shapes.large
+                                ) {
+                                    Icon(Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(18.dp))
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Text("检查更新")
+                                }
+                            }
+
+                            val errorMsg = updateResult?.error
+                            if (errorMsg != null) {
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Text(
+                                    text = errorMsg,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.error
+                                )
+                            }
+                        }
+
+                        isChecking -> {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.padding(vertical = 8.dp),
+                                horizontalArrangement = Arrangement.Center
+                            ) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(20.dp),
+                                    strokeWidth = 2.dp
+                                )
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Text("正在检查更新...")
+                            }
+                        }
+
+                        updateResult == null -> {
+                            Button(
+                                onClick = { checkForUpdates() },
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = MaterialTheme.shapes.large
+                            ) {
+                                Icon(Icons.Default.Update, contentDescription = null, modifier = Modifier.size(18.dp))
+                                Spacer(modifier = Modifier.width(8.dp))
                                 Text("检查更新")
                             }
                         }
 
-                        val errorMsg = updateResult?.error
-                        if (errorMsg != null) {
-                            Spacer(modifier = Modifier.height(8.dp))
-                            Text(
-                                text = errorMsg,
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.error
-                            )
-                        }
-                    }
+                        else -> {
+                            val result = updateResult!!
 
-                    isChecking -> {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier.padding(vertical = 8.dp)
-                        ) {
-                            CircularProgressIndicator(
-                                modifier = Modifier.size(20.dp),
-                                strokeWidth = 2.dp
-                            )
-                            Spacer(modifier = Modifier.width(12.dp))
-                            Text("正在检查更新...")
-                        }
-                    }
-
-                    updateResult == null -> {
-                        OutlinedButton(
-                            onClick = { checkForUpdates() },
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Icon(Icons.Default.Update, contentDescription = null)
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text("检查更新")
-                        }
-                    }
-
-                    else -> {
-                        val result = updateResult!!
-
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier.padding(vertical = 4.dp)
-                        ) {
-                            when {
-                                result.hasUpdate -> {
-                                    Icon(
-                                        Icons.Default.Update,
-                                        contentDescription = null,
-                                        tint = MaterialTheme.colorScheme.primary,
-                                        modifier = Modifier.size(20.dp)
-                                    )
-                                    Spacer(modifier = Modifier.width(8.dp))
-                                    Text(
-                                        text = "发现新版本: ${result.latestVersion}",
-                                        color = MaterialTheme.colorScheme.primary
-                                    )
-                                }
-                                result.error != null -> {
-                                    Icon(
-                                        Icons.Default.Error,
-                                        contentDescription = null,
-                                        tint = MaterialTheme.colorScheme.error,
-                                        modifier = Modifier.size(20.dp)
-                                    )
-                                    Spacer(modifier = Modifier.width(8.dp))
-                                    Text(
-                                        text = "检查失败",
-                                        color = MaterialTheme.colorScheme.error
-                                    )
-                                }
-                                else -> {
-                                    Icon(
-                                        Icons.Default.Check,
-                                        contentDescription = null,
-                                        tint = MaterialTheme.colorScheme.secondary,
-                                        modifier = Modifier.size(20.dp)
-                                    )
-                                    Spacer(modifier = Modifier.width(8.dp))
-                                    Text(
-                                        text = "已是最新版本",
-                                        color = MaterialTheme.colorScheme.secondary
-                                    )
-                                }
-                            }
-                        }
-
-                        Spacer(modifier = Modifier.height(8.dp))
-
-                        Column(
-                            verticalArrangement = Arrangement.spacedBy(8.dp),
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            OutlinedButton(
-                                onClick = { checkForUpdates() },
-                                modifier = Modifier.fillMaxWidth(),
-                                enabled = !isChecking
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.padding(vertical = 4.dp)
                             ) {
-                                Icon(Icons.Default.Refresh, contentDescription = null)
-                                Spacer(modifier = Modifier.width(4.dp))
-                                Text("重新检查")
-                            }
-
-                            Button(
-                                onClick = {
-                                    if (result.hasUpdate && result.latestRelease != null) {
-                                        updateManager.openDownloadPage(
-                                            versionTag = result.latestRelease.tag_name,
-                                            versionType = currentVersionType
+                                when {
+                                    result.hasUpdate -> {
+                                        Icon(
+                                            Icons.Default.Update,
+                                            contentDescription = null,
+                                            tint = MaterialTheme.colorScheme.primary,
+                                            modifier = Modifier.size(20.dp)
                                         )
-                                    } else {
-                                        updateManager.openDownloadPage(versionType = currentVersionType)
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Text(
+                                            text = "发现新版本: ${result.latestVersion}",
+                                            color = MaterialTheme.colorScheme.primary,
+                                            fontWeight = FontWeight.Bold
+                                        )
                                     }
-                                },
-                                modifier = Modifier.fillMaxWidth(),
-                                enabled = result.hasUpdate && result.latestRelease != null && !isChecking,
-                                colors = ButtonDefaults.buttonColors(
-                                    containerColor = if (result.hasUpdate)
-                                        MaterialTheme.colorScheme.primary
-                                    else
-                                        MaterialTheme.colorScheme.surfaceVariant,
-                                    contentColor = if (result.hasUpdate)
-                                        MaterialTheme.colorScheme.onPrimary
-                                    else
-                                        MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            ) {
-                                Icon(Icons.Default.Download, contentDescription = null)
-                                Spacer(modifier = Modifier.width(4.dp))
-                                Text("下载新版本")
+                                    result.error != null -> {
+                                        Icon(
+                                            Icons.Default.Error,
+                                            contentDescription = null,
+                                            tint = MaterialTheme.colorScheme.error,
+                                            modifier = Modifier.size(20.dp)
+                                        )
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Text(
+                                            text = "检查失败",
+                                            color = MaterialTheme.colorScheme.error
+                                        )
+                                    }
+                                    else -> {
+                                        Icon(
+                                            Icons.Default.Check,
+                                            contentDescription = null,
+                                            tint = MaterialTheme.colorScheme.secondary,
+                                            modifier = Modifier.size(20.dp)
+                                        )
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Text(
+                                            text = "已是最新版本",
+                                            color = MaterialTheme.colorScheme.secondary
+                                        )
+                                    }
+                                }
                             }
-                        }
 
-                        if (result.error != null) {
-                            Spacer(modifier = Modifier.height(8.dp))
-                            Text(
-                                text = result.error,
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.error
-                            )
+                            Spacer(modifier = Modifier.height(16.dp))
+
+                            Row(
+                                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                OutlinedButton(
+                                    onClick = { checkForUpdates() },
+                                    modifier = Modifier.weight(1f),
+                                    enabled = !isChecking,
+                                    shape = MaterialTheme.shapes.large
+                                ) {
+                                    Icon(Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(18.dp))
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Text("重新检查")
+                                }
+
+                                Button(
+                                    onClick = {
+                                        if (result.hasUpdate && result.latestRelease != null) {
+                                            updateManager.openDownloadPage(
+                                                versionTag = result.latestRelease.tag_name,
+                                                versionType = currentVersionType
+                                            )
+                                        } else {
+                                            updateManager.openDownloadPage(versionType = currentVersionType)
+                                        }
+                                    },
+                                    modifier = Modifier.weight(1f),
+                                    enabled = (result.hasUpdate && result.latestRelease != null) || !isChecking,
+                                    shape = MaterialTheme.shapes.large,
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = if (result.hasUpdate)
+                                            MaterialTheme.colorScheme.primary
+                                        else
+                                            MaterialTheme.colorScheme.surfaceVariant,
+                                        contentColor = if (result.hasUpdate)
+                                            MaterialTheme.colorScheme.onPrimary
+                                        else
+                                            MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                ) {
+                                    Icon(Icons.Default.Download, contentDescription = null, modifier = Modifier.size(18.dp))
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Text("下载新版本")
+                                }
+                            }
+
+                            if (result.error != null) {
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Text(
+                                    text = result.error,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.error
+                                )
+                            }
                         }
                     }
                 }
             }
-        }
 
-        Card(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = 16.dp)
-                .clickable { onNavigateToLicense() }
-        ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+            OutlinedCard(
+                onClick = onNavigateToLicense,
+                modifier = Modifier.fillMaxWidth(),
+                shape = MaterialTheme.shapes.extraLarge,
+                colors = CardDefaults.outlinedCardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceContainer
+                ),
+                border = CardDefaults.outlinedCardBorder().copy(width = 0.5.dp)
             ) {
-                Text(
-                    text = "开放源代码许可",
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-                Icon(
-                    Icons.AutoMirrored.Filled.ArrowForward,
-                    contentDescription = "查看开源许可",
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(20.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            Icons.Default.InsertDriveFile,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                        Spacer(modifier = Modifier.width(16.dp))
+                        Text(
+                            text = "开放源代码许可",
+                            style = MaterialTheme.typography.titleMedium,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+                    Icon(
+                        Icons.AutoMirrored.Filled.ArrowForward,
+                        contentDescription = "查看开源许可",
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
             }
-        }
 
-        Card(
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp)
+            OutlinedCard(
+                modifier = Modifier.fillMaxWidth(),
+                shape = MaterialTheme.shapes.extraLarge,
+                colors = CardDefaults.outlinedCardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceContainer
+                ),
+                border = CardDefaults.outlinedCardBorder().copy(width = 0.5.dp)
             ) {
-                Text(
-                    text = "版权信息",
-                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                    modifier = Modifier.padding(bottom = 8.dp)
-                )
-                Text(
-                    text = "版权所有 ©2025-2026 HOE Team ，保留所有权利。\n源码使用MIT协议开源\n\n" +
-                            "Copyright ©2025-2026 HOE Team. All rights reserved.\nLicense: MIT",
-                    style = MaterialTheme.typography.bodyMedium
-                )
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(20.dp)
+                ) {
+                    Text(
+                        text = "版权信息",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = "版权所有 ©2025-2026 HOE Team ，保留所有权利。\n源码使用 MIT 协议开源\n\n" +
+                                "Copyright ©2025-2026 HOE Team. All rights reserved.\nLicense: MIT",
+                        style = MaterialTheme.typography.bodyMedium,
+                        lineHeight = androidx.compose.ui.unit.TextUnit.Unspecified
+                    )
+                }
             }
+            
+            Spacer(modifier = Modifier.height(16.dp))
         }
     }
 }

@@ -8,36 +8,36 @@ package com.hoeteam.opendroidchat
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
-import androidx.compose.material.icons.automirrored.filled.*
+import androidx.compose.material.icons.automirrored.filled.Chat
+import androidx.compose.material.icons.automirrored.filled.List
+import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
-import androidx.navigation.NavType
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.collectAsState
-import androidx.compose.ui.platform.LocalConfiguration
-import androidx.compose.foundation.layout.Row
-import com.hoeteam.opendroidchat.ui.screens.ChatScreen
-import com.hoeteam.opendroidchat.ui.screens.ModelEditScreen
-import com.hoeteam.opendroidchat.ui.screens.ModelSettingsScreen
-import com.hoeteam.opendroidchat.ui.screens.SettingsScreen
-import com.hoeteam.opendroidchat.ui.screens.AboutScreen
-import com.hoeteam.opendroidchat.ui.screens.LicenseScreen
+import com.hoeteam.opendroidchat.ui.screens.*
 import com.hoeteam.opendroidchat.ui.theme.OpenDroidChatTheme
 import com.hoeteam.opendroidchat.viewmodel.ChatViewModel
 import com.hoeteam.opendroidchat.viewmodel.ChatViewModelFactory
@@ -54,7 +54,10 @@ class MainActivity : ComponentActivity() {
 
             // 根据存储的主题设置来应用主题
             OpenDroidChatTheme(darkTheme = isDarkTheme) {
-                Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
+                Surface(
+                    modifier = Modifier.fillMaxSize(), 
+                    color = MaterialTheme.colorScheme.background
+                ) {
                     MainNavigation(themeViewModel)
                 }
             }
@@ -95,59 +98,80 @@ fun MainNavigation(themeViewModel: ThemeViewModel) {
     // 统一的根屏幕导航逻辑
     val navigateToRootScreen: (String) -> Unit = { route ->
         navController.navigate(route) {
-            // Pop up to the start destination of the graph to avoid building up a large stack
             popUpTo(navController.graph.findStartDestination().id) {
                 saveState = true
             }
-            // Avoid multiple copies of the same destination when re-selecting the same item
             launchSingleTop = true
-            // Restore state when re-selecting a previously selected item
             restoreState = true
         }
     }
 
     @Composable
     fun NavigationComponent() {
-        // 检查当前路由是否是底部导航栏的路由之一 (只在根屏幕显示导航)
+        // 检查当前路由是否是底部导航栏的路由之一
         val rootRoutes = screens.map { it.first }.toSet()
         val shouldShowNavigation = currentDestination?.route in rootRoutes
         
         if (shouldShowNavigation) {
             if (isLandscape) {
-                // 横屏时显示 NavigationRail
-                NavigationRail {
+                NavigationRail(
+                    containerColor = MaterialTheme.colorScheme.surfaceContainer,
+                    header = {
+                        Text(
+                            "Chat", 
+                            modifier = Modifier.padding(vertical = 16.dp),
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                ) {
                     screens.forEach { (route, label) ->
+                        val selected = currentDestination?.hierarchy?.any { it.route == route } == true
                         NavigationRailItem(
                             icon = {
-                                when (route) {
-                                    Destinations.CHAT_SCREEN -> Icon(Icons.AutoMirrored.Filled.Chat, contentDescription = label)
-                                    Destinations.MODEL_SETTINGS -> Icon(Icons.AutoMirrored.Filled.List, contentDescription = label)
-                                    Destinations.SETTINGS_SCREEN -> Icon(Icons.Filled.Settings, contentDescription = label)
-                                    else -> Icon(Icons.Filled.MoreVert, contentDescription = label)
+                                val icon = when (route) {
+                                    Destinations.CHAT_SCREEN -> Icons.AutoMirrored.Filled.Chat
+                                    Destinations.MODEL_SETTINGS -> Icons.AutoMirrored.Filled.List
+                                    Destinations.SETTINGS_SCREEN -> Icons.Filled.Settings
+                                    else -> Icons.Filled.MoreVert
                                 }
+                                Icon(icon, contentDescription = label)
                             },
-                            label = { Text(label) },
-                            selected = currentDestination?.hierarchy?.any { it.route == route } == true,
-                            onClick = { navigateToRootScreen(route) }
+                            label = { Text(label, fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal) },
+                            selected = selected,
+                            onClick = { navigateToRootScreen(route) },
+                            colors = NavigationRailItemDefaults.colors(
+                                selectedIconColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                                indicatorColor = MaterialTheme.colorScheme.primaryContainer
+                            )
                         )
                     }
                 }
             } else {
-                // 竖屏时显示 NavigationBar
-                NavigationBar {
+                NavigationBar(
+                    containerColor = MaterialTheme.colorScheme.surfaceContainer,
+                    tonalElevation = 0.dp
+                ) {
                     screens.forEach { (route, label) ->
+                        val selected = currentDestination?.hierarchy?.any { it.route == route } == true
                         NavigationBarItem(
                             icon = {
-                                when (route) {
-                                    Destinations.CHAT_SCREEN -> Icon(Icons.AutoMirrored.Filled.Chat, contentDescription = label)
-                                    Destinations.MODEL_SETTINGS -> Icon(Icons.AutoMirrored.Filled.List, contentDescription = label)
-                                    Destinations.SETTINGS_SCREEN -> Icon(Icons.Filled.Settings, contentDescription = label)
-                                    else -> Icon(Icons.Filled.MoreVert, contentDescription = label)
+                                val icon = when (route) {
+                                    Destinations.CHAT_SCREEN -> Icons.AutoMirrored.Filled.Chat
+                                    Destinations.MODEL_SETTINGS -> Icons.AutoMirrored.Filled.List
+                                    Destinations.SETTINGS_SCREEN -> Icons.Filled.Settings
+                                    else -> Icons.Filled.MoreVert
                                 }
+                                Icon(icon, contentDescription = label)
                             },
-                            label = { Text(label) },
-                            selected = currentDestination?.hierarchy?.any { it.route == route } == true,
-                            onClick = { navigateToRootScreen(route) }
+                            label = { Text(label, fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal) },
+                            selected = selected,
+                            onClick = { navigateToRootScreen(route) },
+                            colors = NavigationBarItemDefaults.colors(
+                                selectedIconColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                                indicatorColor = MaterialTheme.colorScheme.primaryContainer
+                            )
                         )
                     }
                 }
@@ -162,18 +186,14 @@ fun MainNavigation(themeViewModel: ThemeViewModel) {
             startDestination = Destinations.CHAT_SCREEN,
             modifier = modifier.fillMaxSize()
         ) {
-            // 1. 聊天界面
             composable(Destinations.CHAT_SCREEN) {
                 ChatScreen(
                     viewModel = viewModel,
-                    // 允许从 ChatScreen 内部（如配置为空时）导航到通用设置
                     onNavigateToSettings = { navigateToRootScreen(Destinations.SETTINGS_SCREEN) },
-                    // FIX: 新增导航到模型列表的回调 (用于 EmptyConfigScreen 按钮)
                     onNavigateToModelSettings = { navigateToRootScreen(Destinations.MODEL_SETTINGS) }
                 )
             }
 
-            // 2. 模型管理列表
             composable(Destinations.MODEL_SETTINGS) {
                 ModelSettingsScreen(
                     viewModel = viewModel,
@@ -184,7 +204,6 @@ fun MainNavigation(themeViewModel: ThemeViewModel) {
                 )
             }
 
-            // 3. 模型编辑/新增界面
             composable(
                 Destinations.MODEL_EDIT,
                 arguments = listOf(navArgument(Destinations.ARG_MODEL_ID) {
@@ -194,27 +213,23 @@ fun MainNavigation(themeViewModel: ThemeViewModel) {
                 })
             ) { backStackEntry ->
                 val modelId = backStackEntry.arguments?.getString(Destinations.ARG_MODEL_ID)
-
                 val allModelsList by viewModel.allModels.collectAsState()
-
-                val modelToEdit = remember(modelId) {
+                val modelToEdit = remember(modelId, allModelsList) {
                     allModelsList.find { it.id == modelId }
                 }
 
                 ModelEditScreen(
                     viewModel = viewModel,
-                    modelToEdit = modelToEdit, // 直接传递找到的模型对象
+                    modelToEdit = modelToEdit,
                     onSave = { navController.popBackStack() }
                 )
             }
 
-            // 4. 应用程序设置界面
             composable(Destinations.SETTINGS_SCREEN) {
                 val isDarkTheme by themeViewModel.darkThemeEnabled.collectAsState()
                 val allowOtherChannelsUpdate by themeViewModel.allowOtherChannelsUpdate.collectAsState()
 
                 SettingsScreen(
-                    // 传入主题状态和切换回调
                     currentDarkTheme = isDarkTheme,
                     onThemeToggle = { themeViewModel.setDarkTheme(it) },
                     allowOtherChannelsUpdate = allowOtherChannelsUpdate,
@@ -223,33 +238,30 @@ fun MainNavigation(themeViewModel: ThemeViewModel) {
                 )
             }
 
-            // 5. 关于程序界面（修改：添加导航到开源许可的回调）
             composable(Destinations.ABOUT_SCREEN) {
                 AboutScreen(
-                    onBack = { navController.popBackStack() }, // 返回到 SettingsScreen
-                    onNavigateToLicense = { navController.navigate(Destinations.LICENSE_SCREEN) } // 新增：导航到开源许可界面
+                    onBack = { navController.popBackStack() },
+                    onNavigateToLicense = { navController.navigate(Destinations.LICENSE_SCREEN) }
                 )
             }
 
-            // 6. 新增：开源许可界面
             composable(Destinations.LICENSE_SCREEN) {
                 LicenseScreen(
-                    onBack = { navController.popBackStack() } // 返回到 AboutScreen
+                    onBack = { navController.popBackStack() }
                 )
             }
         }
     }
 
     if (isLandscape) {
-        // 横屏布局：左侧 NavigationRail，右侧内容
         Row(modifier = Modifier.fillMaxSize()) {
             NavigationComponent()
             Content()
         }
     } else {
-        // 竖屏布局：底部 NavigationBar，上方内容
         Scaffold(
-            bottomBar = { NavigationComponent() }
+            bottomBar = { NavigationComponent() },
+            contentWindowInsets = WindowInsets(0, 0, 0, 0)
         ) { innerPadding ->
             Content(modifier = Modifier.padding(innerPadding))
         }

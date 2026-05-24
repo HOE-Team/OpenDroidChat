@@ -16,6 +16,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
@@ -53,8 +54,13 @@ fun ModelEditScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(if (isNewModel) "添加新模型" else "编辑模型: ${modelToEdit?.name}") },
-                windowInsets = WindowInsets(0, 0, 0, 0),
+                title = { 
+                    Text(
+                        if (isNewModel) "添加新实例" else "编辑实例: ${modelToEdit?.name}",
+                        fontWeight = FontWeight.SemiBold
+                    ) 
+                },
+                //windowInsets = WindowInsets(0, 0, 0, 0),
                 navigationIcon = {
                     IconButton(onClick = onSave) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "返回")
@@ -63,44 +69,52 @@ fun ModelEditScreen(
             )
         },
         bottomBar = {
-            Button(
-                onClick = {
-                    val newModel = LlmModel(
-                        id = originalId.ifBlank { java.util.UUID.randomUUID().toString() },
-                        name = name.trim(),
-                        provider = provider,
-                        apiKey = apiKey.trim(),
-                        modelName = modelName.trim(),
-                        systemPrompt = systemPrompt.trim(),
-                        customApiUrl = customApiUrl.trim().takeIf { it.isNotBlank() && provider == LlmProvider.Custom },
-                        appId = appId.trim().takeIf { it.isNotBlank() },
-                        useStream = if (provider == LlmProvider.Custom) useStream else true
-                    )
-                    viewModel.addOrUpdateModel(newModel)
-                    onSave()
-                },
-                enabled = isSaveEnabled,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp)
+            Surface(
+                tonalElevation = 3.dp,
+                color = MaterialTheme.colorScheme.surfaceContainerHigh
             ) {
-                Text(if (isNewModel) "保存" else "保存修改")
+                Button(
+                    onClick = {
+                        val newModel = LlmModel(
+                            id = originalId.ifBlank { java.util.UUID.randomUUID().toString() },
+                            name = name.trim(),
+                            provider = provider,
+                            apiKey = apiKey.trim(),
+                            modelName = modelName.trim(),
+                            systemPrompt = systemPrompt.trim(),
+                            customApiUrl = customApiUrl.trim().takeIf { it.isNotBlank() && provider == LlmProvider.Custom },
+                            appId = appId.trim().takeIf { it.isNotBlank() },
+                            useStream = if (provider == LlmProvider.Custom) useStream else true
+                        )
+                        viewModel.addOrUpdateModel(newModel)
+                        onSave()
+                    },
+                    enabled = isSaveEnabled,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp)
+                        .height(56.dp),
+                    shape = MaterialTheme.shapes.large
+                ) {
+                    Text(if (isNewModel) "创建实例" else "保存修改", style = MaterialTheme.typography.labelLarge)
+                }
             }
         }
     ) { paddingValues ->
         Column(
             modifier = Modifier
                 .padding(paddingValues)
-                .padding(16.dp)
-                .verticalScroll(rememberScrollState()),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .padding(24.dp),
+            verticalArrangement = Arrangement.spacedBy(20.dp)
         ) {
             OutlinedTextField(
                 value = name,
                 onValueChange = { name = it },
-                label = { Text("模型名称 (自定义)*") },
-                placeholder = { Text("例如：我的Qwen") },
-                modifier = Modifier.fillMaxWidth()
+                label = { Text("名称 (例如：My Qwen)") },
+                modifier = Modifier.fillMaxWidth(),
+                shape = MaterialTheme.shapes.large
             )
 
             ExposedDropdownMenuBox(
@@ -111,11 +125,12 @@ fun ModelEditScreen(
                     value = provider.displayName,
                     onValueChange = {},
                     readOnly = true,
-                    label = { Text("LLM API 提供商") },
+                    label = { Text("API 提供商") },
                     trailingIcon = {
                         ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded)
                     },
-                    modifier = Modifier.menuAnchor().fillMaxWidth()
+                    modifier = Modifier.menuAnchor().fillMaxWidth(),
+                    shape = MaterialTheme.shapes.large
                 )
                 ExposedDropdownMenu(
                     expanded = expanded,
@@ -144,53 +159,60 @@ fun ModelEditScreen(
             OutlinedTextField(
                 value = modelName,
                 onValueChange = { modelName = it },
-                label = { Text("模型调用名称 (Model Name)*") },
-                placeholder = { Text("例如：qwen-turbo, gpt-4o, gemini-2.5-flash") },
-                modifier = Modifier.fillMaxWidth()
+                label = { Text("模型标识 (Model Name)") },
+                placeholder = { Text("例如：qwen-max, gpt-4o") },
+                modifier = Modifier.fillMaxWidth(),
+                shape = MaterialTheme.shapes.large
             )
 
             OutlinedTextField(
                 value = apiKey,
                 onValueChange = { apiKey = it },
-                label = { Text("API Key*") },
-                placeholder = { Text("输入您的 LLM API 密钥") },
+                label = { Text("API Key") },
                 visualTransformation = PasswordVisualTransformation(),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
+                shape = MaterialTheme.shapes.large
             )
 
             if (provider == LlmProvider.Custom) {
                 OutlinedTextField(
                     value = customApiUrl,
                     onValueChange = { customApiUrl = it },
-                    label = { Text("自定义 API URL") },
-                    placeholder = { Text("例如：https://your-custom-api.com/v1/chat") },
-                    modifier = Modifier.fillMaxWidth()
+                    label = { Text("API 地址 (URL)") },
+                    placeholder = { Text("https://example.com/v1/chat/completions") },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = MaterialTheme.shapes.large
                 )
 
-                // 自定义 API 额外显示的流式传输开关
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 8.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
+                Surface(
+                    color = MaterialTheme.colorScheme.surfaceContainerLow,
+                    shape = MaterialTheme.shapes.large,
+                    modifier = Modifier.fillMaxWidth()
                 ) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = "允许流式传输 (Stream)",
-                            style = MaterialTheme.typography.bodyLarge
-                        )
-                        Text(
-                            text = "开启后将实时显示模型输出，需自定义 API 支持 SSE 协议。",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                    Row(
+                        modifier = Modifier
+                            .padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = "流式传输 (Stream)",
+                                style = MaterialTheme.typography.bodyLarge,
+                                fontWeight = FontWeight.Medium
+                            )
+                            Text(
+                                text = "开启后实时显示输出",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        Switch(
+                            checked = useStream,
+                            onCheckedChange = { useStream = it }
                         )
                     }
-                    Switch(
-                        checked = useStream,
-                        onCheckedChange = { useStream = it }
-                    )
                 }
             }
 
@@ -201,31 +223,37 @@ fun ModelEditScreen(
                     label = {
                         Text(
                             when (provider) {
-                                LlmProvider.Dashscope -> "Dashscope 应用 ID (App ID, 可选)"
-                                else -> "应用 ID / 额外参数 (可选)"
+                                LlmProvider.Dashscope -> "应用 ID (App ID, 可选)"
+                                else -> "额外参数 (可选)"
                             }
                         )
                     },
-                    placeholder = { Text("输入应用 ID 或留空") },
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = MaterialTheme.shapes.large
                 )
             }
 
             OutlinedTextField(
                 value = systemPrompt,
                 onValueChange = { systemPrompt = it },
-                label = { Text("系统提示词 (Prompt)") },
-                placeholder = { Text("输入 LLM 的初始指令，自定义语言模型的行为。") },
-                maxLines = 5,
+                label = { Text("系统提示词 (System Prompt)") },
+                placeholder = { Text("设置模型的行为准则...") },
+                maxLines = 8,
                 minLines = 3,
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
+                shape = MaterialTheme.shapes.large
             )
 
-            Text(
-                text = "* 必填字段",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.error
-            )
+            if (!isSaveEnabled) {
+                Text(
+                    text = "请填写所有必填字段 (*) 以保存配置",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.error,
+                    modifier = Modifier.padding(top = 8.dp)
+                )
+            }
+            
+            Spacer(modifier = Modifier.height(24.dp))
         }
     }
 }

@@ -5,7 +5,7 @@ The source code is open-sourced under the MIT License.
 */
 package com.hoeteam.opendroidchat.ui.screens
 
-import androidx.compose.foundation.background
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -49,8 +49,8 @@ fun SettingsScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("设置", fontWeight = FontWeight.Normal) },
-                windowInsets = WindowInsets(0, 0, 0, 0),
+                title = { Text("设置", fontWeight = FontWeight.SemiBold) },
+                //windowInsets = WindowInsets(0, 0, 0, 0),
             )
         }
     ) { paddingValues ->
@@ -59,22 +59,36 @@ fun SettingsScreen(
                 .fillMaxSize()
                 .padding(paddingValues)
                 .verticalScroll(rememberScrollState())
+                .padding(bottom = 32.dp)
         ) {
             val warningText = getWarningText()
             if (warningText != null) {
-                Card(
+                OutlinedCard(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(16.dp),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer)
+                    shape = MaterialTheme.shapes.extraLarge,
+                    colors = CardDefaults.outlinedCardColors(
+                        containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.7f)
+                    ),
+                    border = BorderStroke(width = 1.dp, color = MaterialTheme.colorScheme.error.copy(alpha = 0.5f))
                 ) {
-                    Column(modifier = Modifier.padding(16.dp)) {
-                        Icon(
-                            Icons.Filled.Warning,
-                            contentDescription = "警告",
-                            tint = MaterialTheme.colorScheme.onErrorContainer
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
+                    Column(modifier = Modifier.padding(20.dp)) {
+                        Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
+                            Icon(
+                                Icons.Filled.Warning,
+                                contentDescription = "警告",
+                                tint = MaterialTheme.colorScheme.error
+                            )
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Text(
+                                text = "版本警告",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.error
+                            )
+                        }
+                        Spacer(modifier = Modifier.height(12.dp))
                         Text(
                             text = warningText,
                             style = MaterialTheme.typography.bodyMedium,
@@ -86,52 +100,67 @@ fun SettingsScreen(
 
             // --- 外观分组 ---
             SettingsGroupHeader("外观")
-            ListItem(
-                headlineContent = { Text("深色模式") },
-                leadingContent = {
-                    Icon(Icons.Filled.DarkMode, contentDescription = null)
-                },
-                trailingContent = {
-                    Switch(
-                        checked = currentDarkTheme,
-                        onCheckedChange = onThemeToggle
-                    )
-                }
-            )
-
-            HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+            Surface(
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
+                shape = MaterialTheme.shapes.extraLarge,
+                color = MaterialTheme.colorScheme.surfaceContainer
+            ) {
+                ListItem(
+                    headlineContent = { Text("深色模式", fontWeight = FontWeight.Medium) },
+                    leadingContent = {
+                        Icon(Icons.Filled.DarkMode, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                    },
+                    trailingContent = {
+                        Switch(
+                            checked = currentDarkTheme,
+                            onCheckedChange = onThemeToggle
+                        )
+                    },
+                    colors = ListItemDefaults.colors(containerColor = androidx.compose.ui.graphics.Color.Transparent)
+                )
+            }
 
             // --- 更新分组 ---
             SettingsGroupHeader("更新")
-            ListItem(
-                headlineContent = { Text("允许获取其他分发渠道的更新") },
-                supportingContent = { Text("开启后可获取 Stable/Beta 等其他渠道的更新推送") },
-                leadingContent = {
-                    Icon(Icons.Filled.Update, contentDescription = null)
-                },
-                trailingContent = {
-                    Switch(
-                        checked = allowOtherChannelsUpdate,
-                        onCheckedChange = onAllowOtherChannelsUpdateChange
-                    )
-                }
-            )
-
-            HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+            Surface(
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
+                shape = MaterialTheme.shapes.extraLarge,
+                color = MaterialTheme.colorScheme.surfaceContainer
+            ) {
+                ListItem(
+                    headlineContent = { Text("允许获取其他分发渠道的更新", fontWeight = FontWeight.Medium) },
+                    supportingContent = { Text("开启后可获取 Stable/Beta 等其他渠道的更新推送") },
+                    leadingContent = {
+                        Icon(Icons.Filled.Update, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                    },
+                    trailingContent = {
+                        Switch(
+                            checked = allowOtherChannelsUpdate,
+                            onCheckedChange = onAllowOtherChannelsUpdateChange
+                        )
+                    },
+                    colors = ListItemDefaults.colors(containerColor = androidx.compose.ui.graphics.Color.Transparent)
+                )
+            }
 
             // --- 杂项分组 ---
             SettingsGroupHeader("杂项")
-            ListItem(
-                headlineContent = { Text("关于 OpenDroidChat") },
-                supportingContent = { Text("版本信息、开发团队及项目详情") },
-                leadingContent = {
-                    Icon(Icons.Filled.Info, contentDescription = null)
-                },
-                trailingContent = { Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = null) },
-                modifier = Modifier.clickable { onNavigateToAbout() }
-            )
-
-            Spacer(modifier = Modifier.height(32.dp))
+            Surface(
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
+                shape = MaterialTheme.shapes.extraLarge,
+                color = MaterialTheme.colorScheme.surfaceContainer
+            ) {
+                ListItem(
+                    headlineContent = { Text("关于 OpenDroidChat", fontWeight = FontWeight.Medium) },
+                    supportingContent = { Text("版本信息、开发团队及项目详情") },
+                    leadingContent = {
+                        Icon(Icons.Filled.Info, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                    },
+                    trailingContent = { Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = null) },
+                    modifier = Modifier.clickable { onNavigateToAbout() },
+                    colors = ListItemDefaults.colors(containerColor = androidx.compose.ui.graphics.Color.Transparent)
+                )
+            }
         }
     }
 }
@@ -141,7 +170,8 @@ fun SettingsGroupHeader(title: String) {
     Text(
         text = title,
         style = MaterialTheme.typography.labelLarge,
+        fontWeight = FontWeight.Bold,
         color = MaterialTheme.colorScheme.primary,
-        modifier = Modifier.padding(start = 16.dp, top = 24.dp, bottom = 8.dp)
+        modifier = Modifier.padding(start = 24.dp, top = 24.dp, bottom = 8.dp)
     )
 }

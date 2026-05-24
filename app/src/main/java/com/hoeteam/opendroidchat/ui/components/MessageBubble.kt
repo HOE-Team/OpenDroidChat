@@ -11,7 +11,6 @@ import android.content.Context
 import android.widget.Toast
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CornerSize
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.DoneAll
@@ -51,18 +50,19 @@ fun MessageBubble(
 
     val isUser = message.sender == Sender.USER
     val bubbleColor = when {
-        isUser -> MaterialTheme.colorScheme.primary
+        isUser -> MaterialTheme.colorScheme.primaryContainer
         message.text.contains("LLM 响应出错") -> MaterialTheme.colorScheme.errorContainer
-        else -> MaterialTheme.colorScheme.surfaceVariant
+        else -> MaterialTheme.colorScheme.surfaceContainer
     }
     val textColor = when {
-        isUser -> MaterialTheme.colorScheme.onPrimary
+        isUser -> MaterialTheme.colorScheme.onPrimaryContainer
         message.text.contains("LLM 响应出错") -> MaterialTheme.colorScheme.onErrorContainer
         else -> MaterialTheme.colorScheme.onSurfaceVariant
     }
 
-    val cornerSize = 16.dp
-    val bubbleShape = RoundedCornerShape(cornerSize).copy(
+    // M3 Expressive: 使用较大的圆角 (24dp - 28dp)
+    val cornerSize = 24.dp
+    val bubbleShape = MaterialTheme.shapes.extraLarge.copy(
         bottomEnd = if (isUser) CornerSize(4.dp) else CornerSize(cornerSize),
         bottomStart = if (!isUser) CornerSize(4.dp) else CornerSize(cornerSize)
     )
@@ -71,8 +71,8 @@ fun MessageBubble(
         modifier = Modifier
             .fillMaxWidth()
             .padding(
-                start = if (isUser) 60.dp else 8.dp,
-                end = if (isUser) 8.dp else 60.dp
+                start = if (isUser) 48.dp else 0.dp,
+                end = if (isUser) 0.dp else 48.dp
             ),
         contentAlignment = if (isUser) Alignment.TopEnd else Alignment.TopStart
     ) {
@@ -82,27 +82,30 @@ fun MessageBubble(
             Surface(
                 color = bubbleColor,
                 shape = bubbleShape,
-                tonalElevation = 1.dp
+                tonalElevation = if (isUser) 0.dp else 1.dp,
+                border = if (!isUser) CardDefaults.outlinedCardBorder().copy(width = 0.5.dp) else null
             ) {
                 if (isUser) {
                     Text(
                         text = message.text,
                         color = textColor,
-                        modifier = Modifier.padding(10.dp),
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
                         style = MaterialTheme.typography.bodyLarge
                     )
                 } else {
-                    hybridMarkdown(
-                        message.text,
-                        Modifier.padding(10.dp),
-                        textColor
-                    )
+                    Box(modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)) {
+                        hybridMarkdown(
+                            message.text,
+                            Modifier,
+                            textColor
+                        )
+                    }
                 }
             }
 
             Row(
                 modifier = Modifier
-                    .padding(top = 4.dp)
+                    .padding(top = 2.dp)
                     .widthIn(min = 32.dp),
                 horizontalArrangement = if (isUser) Arrangement.End else Arrangement.Start
             ) {
@@ -123,8 +126,8 @@ fun MessageBubble(
                             CopyState.Copied -> Icons.Default.DoneAll
                         },
                         contentDescription = if (copyState == CopyState.Idle) "复制内容" else "已复制",
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.size(18.dp)
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                        modifier = Modifier.size(16.dp)
                     )
                 }
             }

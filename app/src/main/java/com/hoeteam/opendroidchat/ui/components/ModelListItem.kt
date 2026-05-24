@@ -5,7 +5,6 @@ The source code is open-sourced under the MIT License.
 */
 package com.hoeteam.opendroidchat.ui.components
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
@@ -30,47 +29,83 @@ fun ModelListItem(
     val isDeletable = allModelsCount > 1
     val canBeDeleted = isDeletable && !isSelected
 
-    Row(
+    OutlinedCard(
+        onClick = { onSelect(model.id) },
+        shape = MaterialTheme.shapes.extraLarge,
+        colors = CardDefaults.outlinedCardColors(
+            containerColor = if (isSelected) 
+                MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.2f)
+            else 
+                MaterialTheme.colorScheme.surfaceContainer
+        ),
+        border = CardDefaults.outlinedCardBorder(enabled = isSelected).copy(
+            width = if (isSelected) 1.dp else 0.5.dp
+        ),
         modifier = Modifier
             .fillMaxWidth()
-            .clickable { onSelect(model.id) }
-            .padding(horizontal = 16.dp, vertical = 8.dp),
-        verticalAlignment = Alignment.CenterVertically
+            .padding(horizontal = 16.dp, vertical = 6.dp)
     ) {
-        RadioButton(
-            selected = isSelected,
-            onClick = { onSelect(model.id) },
-            modifier = Modifier.size(48.dp).wrapContentSize(Alignment.Center)
-        )
-        Column(modifier = Modifier.weight(1f).padding(start = 8.dp)) {
-            Text(model.name, style = MaterialTheme.typography.titleMedium)
-            Text(
-                "API: ${model.provider.displayName} | 模型: ${model.modelName}",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
+        ListItem(
+            colors = ListItemDefaults.colors(
+                containerColor = androidx.compose.ui.graphics.Color.Transparent
+            ),
+            headlineContent = {
+                Text(
+                    model.name, 
+                    style = MaterialTheme.typography.titleMedium,
+                    color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+                )
+            },
+            supportingContent = {
+                Text(
+                    "API: ${model.provider.displayName} | 模型: ${model.modelName}",
+                    style = MaterialTheme.typography.bodySmall
+                )
+            },
+            leadingContent = {
+                RadioButton(
+                    selected = isSelected,
+                    onClick = { onSelect(model.id) }
+                )
+            },
+            trailingContent = {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    IconButton(onClick = onEdit) {
+                        Icon(
+                            Icons.Filled.Edit, 
+                            contentDescription = "编辑实例",
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
 
-        IconButton(onClick = onEdit) {
-            Icon(Icons.Filled.Edit, contentDescription = "编辑实例")
-        }
-
-        if (canBeDeleted) {
-            IconButton(onClick = { onDelete(model) }) {
-                Icon(Icons.Filled.Delete, contentDescription = "删除实例", tint = MaterialTheme.colorScheme.error)
-            }
-        } else if (isDeletable && isSelected) {
-            TooltipBox(
-                positionProvider = TooltipDefaults.rememberPlainTooltipPositionProvider(),
-                tooltip = {
-                    PlainTooltip { Text("请先切换到其他实例再删除") }
-                },
-                state = rememberTooltipState()
-            ) {
-                IconButton(onClick = { /* Do nothing */ }, enabled = false) {
-                    Icon(Icons.Filled.Delete, contentDescription = "删除实例", tint = MaterialTheme.colorScheme.surfaceVariant)
+                    if (canBeDeleted) {
+                        IconButton(onClick = { onDelete(model) }) {
+                            Icon(
+                                Icons.Filled.Delete, 
+                                contentDescription = "删除实例", 
+                                tint = MaterialTheme.colorScheme.error
+                            )
+                        }
+                    } else if (isDeletable && isSelected) {
+                        TooltipBox(
+                            positionProvider = TooltipDefaults.rememberPlainTooltipPositionProvider(),
+                            tooltip = {
+                                PlainTooltip { Text("请先切换到其他实例再删除") }
+                            },
+                            state = rememberTooltipState()
+                        ) {
+                            IconButton(onClick = { /* Do nothing */ }, enabled = false) {
+                                Icon(
+                                    Icons.Filled.Delete, 
+                                    contentDescription = "删除实例", 
+                                    tint = MaterialTheme.colorScheme.surfaceVariant
+                                )
+                            }
+                        }
+                    }
                 }
-            }
-        }
+            },
+            modifier = Modifier.padding(vertical = 4.dp)
+        )
     }
 }
