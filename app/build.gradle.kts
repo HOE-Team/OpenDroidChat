@@ -16,7 +16,7 @@ android {
         applicationId = "com.hoeteam.opendroidchat"
         minSdk = 23
         targetSdk = 36
-        versionCode = 18
+        versionCode = 19
         versionName = "Stable-1.7-HelloM3Express"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
