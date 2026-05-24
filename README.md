@@ -142,6 +142,7 @@ project/
 
 > [!WARNING]
 > ### 著作权声明
-> OpenDroidChat Geometry 系列徽标为 HOE Team 所有，受法律保护。未经明确书面授权，不得用于商业用途或进行修改后使用。 
+> OpenDroidChat Geometry 系列徽标为 HOE Team 所有，受法律保护。未经明确书面授权，不得用于商业用途或进行修改后使用。
+> 
 > 旧式应用图标（OpenDroidChat Bugdroid-Say）由[ChatGPT[↗]](https://chatgpt.com)生成，使用CC BY-NC-SA协议开放
 
