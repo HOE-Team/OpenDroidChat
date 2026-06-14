@@ -1,5 +1,5 @@
 /*
-OpenDroidChat Message Bubble Component
+OpenDroidChat Message Bubble Component - M3 Expressive Refactored
 Copyright (C) 2025-2026 HOE Team. All rights reserved.
 The source code is open-sourced under the MIT License.
 */
@@ -9,8 +9,12 @@ import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
 import android.widget.Toast
+import androidx.compose.animation.core.*
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.CornerSize
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.DoneAll
@@ -18,6 +22,8 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.scale
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.hoeteam.opendroidchat.data.Message
@@ -50,29 +56,31 @@ fun MessageBubble(
 
     val isUser = message.sender == Sender.USER
     val bubbleColor = when {
-        isUser -> MaterialTheme.colorScheme.primaryContainer
+        isUser -> MaterialTheme.colorScheme.primary
         message.text.contains("LLM 响应出错") -> MaterialTheme.colorScheme.errorContainer
-        else -> MaterialTheme.colorScheme.surfaceContainer
+        else -> MaterialTheme.colorScheme.surfaceContainerHigh
     }
     val textColor = when {
-        isUser -> MaterialTheme.colorScheme.onPrimaryContainer
+        isUser -> MaterialTheme.colorScheme.onPrimary
         message.text.contains("LLM 响应出错") -> MaterialTheme.colorScheme.onErrorContainer
         else -> MaterialTheme.colorScheme.onSurfaceVariant
     }
 
-    // M3 Expressive: 使用较大的圆角 (24dp - 28dp)
-    val cornerSize = 24.dp
-    val bubbleShape = MaterialTheme.shapes.extraLarge.copy(
-        bottomEnd = if (isUser) CornerSize(4.dp) else CornerSize(cornerSize),
-        bottomStart = if (!isUser) CornerSize(4.dp) else CornerSize(cornerSize)
-    )
+    // M3E 标志性非对称大气圆角
+    val bubbleShape = if (isUser) {
+        RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp, bottomStart = 24.dp, bottomEnd = 4.dp)
+    } else {
+        RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp, bottomStart = 4.dp, bottomEnd = 24.dp)
+    }
 
     Box(
         modifier = Modifier
             .fillMaxWidth()
             .padding(
-                start = if (isUser) 48.dp else 0.dp,
-                end = if (isUser) 0.dp else 48.dp
+                start = if (isUser) 60.dp else 8.dp,
+                end = if (isUser) 8.dp else 60.dp,
+                top = 4.dp,
+                bottom = 4.dp
             ),
         contentAlignment = if (isUser) Alignment.TopEnd else Alignment.TopStart
     ) {
@@ -82,8 +90,8 @@ fun MessageBubble(
             Surface(
                 color = bubbleColor,
                 shape = bubbleShape,
-                tonalElevation = if (isUser) 0.dp else 1.dp,
-                border = if (!isUser) CardDefaults.outlinedCardBorder().copy(width = 0.5.dp) else null
+                tonalElevation = if (isUser) 0.dp else 2.dp,
+                shadowElevation = 1.dp
             ) {
                 if (isUser) {
                     Text(
@@ -93,43 +101,47 @@ fun MessageBubble(
                         style = MaterialTheme.typography.bodyLarge
                     )
                 } else {
-                    Box(modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)) {
-                        hybridMarkdown(
-                            message.text,
-                            Modifier,
-                            textColor
-                        )
-                    }
+                    hybridMarkdown(
+                        message.text,
+                        Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+                        textColor
+                    )
                 }
             }
 
-            Row(
+            // 复制按钮的 M3E 物理反馈
+            val interactionSource = remember { MutableInteractionSource() }
+            val isPressed by interactionSource.collectIsPressedAsState()
+            val buttonScale by animateFloatAsState(
+                targetValue = if (isPressed) 0.85f else 1f,
+                animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessMedium),
+                label = "CopyButtonScale"
+            )
+
+            IconButton(
+                onClick = {
+                    scope.launch {
+                        copyToClipboard(context, message.text)
+                        copyState = CopyState.Copied
+                        delay(2000)
+                        copyState = CopyState.Idle
+                    }
+                },
                 modifier = Modifier
                     .padding(top = 2.dp)
-                    .widthIn(min = 32.dp),
-                horizontalArrangement = if (isUser) Arrangement.End else Arrangement.Start
+                    .size(36.dp)
+                    .scale(buttonScale),
+                interactionSource = interactionSource
             ) {
-                IconButton(
-                    onClick = {
-                        scope.launch {
-                            copyToClipboard(context, message.text)
-                            copyState = CopyState.Copied
-                            delay(2000)
-                            copyState = CopyState.Idle
-                        }
+                Icon(
+                    imageVector = when (copyState) {
+                        CopyState.Idle -> Icons.Default.ContentCopy
+                        CopyState.Copied -> Icons.Default.DoneAll
                     },
-                    modifier = Modifier.size(32.dp)
-                ) {
-                    Icon(
-                        imageVector = when (copyState) {
-                            CopyState.Idle -> Icons.Default.ContentCopy
-                            CopyState.Copied -> Icons.Default.DoneAll
-                        },
-                        contentDescription = if (copyState == CopyState.Idle) "复制内容" else "已复制",
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
-                        modifier = Modifier.size(16.dp)
-                    )
-                }
+                    contentDescription = if (copyState == CopyState.Idle) "复制内容" else "已复制",
+                    tint = if (copyState == CopyState.Copied) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                    modifier = Modifier.size(16.dp)
+                )
             }
         }
     }

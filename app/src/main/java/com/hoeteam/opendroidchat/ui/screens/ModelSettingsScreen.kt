@@ -1,22 +1,27 @@
 /*
-OpenDroidChat Model Settings Screen
+OpenDroidChat Model Settings Screen - M3 Expressive Refactored
 Copyright (C) 2025-2026 HOE Team. All rights reserved.
 The source code is open-sourced under the MIT License.
 */
 package com.hoeteam.opendroidchat.ui.screens
 
+import androidx.compose.animation.*
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.hoeteam.opendroidchat.ui.components.ModelListItem
 import com.hoeteam.opendroidchat.viewmodel.ChatViewModel
@@ -31,65 +36,65 @@ fun ModelSettingsScreen(
 ) {
     val allModels by viewModel.allModels.collectAsState()
     val currentModel by viewModel.currentModel.collectAsState()
+    val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
 
     Scaffold(
+        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
+            // 【修改】：改用紧凑型 TopAppBar，并移除 navigationIcon (返回按钮)
             TopAppBar(
-                title = { Text("LLM API 实例管理", fontWeight = FontWeight.SemiBold) },
-                //windowInsets = WindowInsets(0, 0, 0, 0),
+                title = {
+                    Text(
+                        "模型实例管理",
+                        style = MaterialTheme.typography.titleLarge.copy(
+                            letterSpacing = (-0.2).sp
+                        )
+                    )
+                },
+                navigationIcon = {}, // 【修改】：不需要返回按钮，置空
+                windowInsets = WindowInsets(0, 0, 0, 0),
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.surface,
+                    scrolledContainerColor = MaterialTheme.colorScheme.surface
+                ),
+                scrollBehavior = scrollBehavior
             )
         },
         floatingActionButton = {
-            LargeFloatingActionButton(
+            FloatingActionButton(
                 onClick = { onNavigateToEditModel(null) },
+                shape = RoundedCornerShape(20.dp),
                 containerColor = MaterialTheme.colorScheme.primaryContainer,
-                contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                shape = MaterialTheme.shapes.extraLarge
+                elevation = FloatingActionButtonDefaults.bottomAppBarFabElevation(defaultElevation = 4.dp)
             ) {
-                Icon(Icons.Filled.Add, contentDescription = "添加新实例", modifier = Modifier.size(30.dp))
+                Icon(Icons.Default.Add, contentDescription = "添加新实例")
             }
         }
     ) { paddingValues ->
-        if (allModels.isEmpty()) {
-            Box(
-                modifier = Modifier
-                    .padding(paddingValues)
-                    .fillMaxSize(),
-                contentAlignment = Alignment.Center
-            ) {
-                OutlinedCard(
-                    modifier = Modifier.padding(24.dp),
-                    shape = MaterialTheme.shapes.extraLarge,
-                    colors = CardDefaults.outlinedCardColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceContainer
-                    )
-                ) {
-                    Column(
-                        modifier = Modifier.padding(24.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally
+        LazyColumn(
+            modifier = Modifier
+                .padding(paddingValues)
+                .fillMaxSize(),
+            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            if (allModels.isEmpty()) {
+                item {
+                    Surface(
+                        modifier = Modifier.fillMaxWidth().padding(16.dp),
+                        shape = RoundedCornerShape(24.dp),
+                        color = MaterialTheme.colorScheme.surfaceContainer
                     ) {
                         Text(
-                            "暂无配置",
-                            style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.Bold
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text(
-                            "点击右下角的 '+' 添加您的第一个 LLM API 实例。",
-                            style = MaterialTheme.typography.bodyMedium,
+                            "您还没有配置任何模型。\n点击右下角的 '+' 按钮开始添加。",
+                            modifier = Modifier.padding(24.dp),
+                            style = MaterialTheme.typography.bodyLarge,
+                            lineHeight = 24.sp,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                 }
-            }
-        } else {
-            LazyColumn(
-                modifier = Modifier
-                    .padding(paddingValues)
-                    .fillMaxSize(),
-                contentPadding = PaddingValues(top = 8.dp, bottom = 80.dp),
-                verticalArrangement = Arrangement.spacedBy(4.dp)
-            ) {
+            } else {
                 items(allModels, key = { it.id }) { model ->
                     ModelListItem(
                         model = model,

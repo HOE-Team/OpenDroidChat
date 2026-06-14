@@ -7,7 +7,7 @@ package com.hoeteam.opendroidchat.ui.components
 
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
-import androidx.compose.material3.MaterialTheme
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -27,7 +27,7 @@ fun HybridMarkdown(
     val codeBackground = if (isDark) Color(0xFF1E1E1E) else Color(0xFFF5F5F5)
     val codeTextColor = if (isDark) Color(0xFFCE9178) else Color(0xFFB00020)
 
-    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    Column(modifier = modifier) {
         var insideCodeBlock = false
         val normalBuffer = mutableListOf<String>()
         val lines = text.lines()
@@ -37,17 +37,16 @@ fun HybridMarkdown(
                 if (insideCodeBlock) {
                     Surface(
                         color = codeBackground,
-                        shape = MaterialTheme.shapes.medium,
+                        shape = RoundedCornerShape(6.dp),
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(vertical = 4.dp)
+                            .padding(vertical = 2.dp)
                     ) {
                         Text(
                             text = normalBuffer.joinToString("\n"),
                             fontFamily = FontFamily.Monospace,
                             color = codeTextColor,
-                            modifier = Modifier.padding(12.dp),
-                            style = MaterialTheme.typography.bodySmall
+                            modifier = Modifier.padding(8.dp)
                         )
                     }
                     normalBuffer.clear()
@@ -74,17 +73,16 @@ fun HybridMarkdown(
             if (insideCodeBlock) {
                 Surface(
                     color = codeBackground,
-                    shape = MaterialTheme.shapes.medium,
+                    shape = RoundedCornerShape(6.dp),
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(vertical = 4.dp)
+                        .padding(vertical = 2.dp)
                 ) {
                     Text(
                         text = normalBuffer.joinToString("\n"),
                         fontFamily = FontFamily.Monospace,
                         color = codeTextColor,
-                        modifier = Modifier.padding(12.dp),
-                        style = MaterialTheme.typography.bodySmall
+                        modifier = Modifier.padding(8.dp)
                     )
                 }
             } else {
