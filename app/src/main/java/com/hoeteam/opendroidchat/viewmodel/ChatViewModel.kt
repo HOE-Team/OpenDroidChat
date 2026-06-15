@@ -19,16 +19,18 @@ class ChatViewModel(
 ) : ViewModel() {
 
     // ------------------- UI 状态 -------------------
+    // 使用 Eagerly 策略让数据在 ViewModel 创建时立即开始加载，
+    // 避免导航切换时因 WhileSubscribed 超时导致重新加载和解密
 
     val currentModel: StateFlow<LlmModel?> = settingsRepository.currentModelFlow.stateIn(
         scope = viewModelScope,
-        started = SharingStarted.WhileSubscribed(5000),
+        started = SharingStarted.Eagerly,
         initialValue = null
     )
 
     val allModels: StateFlow<List<LlmModel>> = settingsRepository.allModelsFlow.stateIn(
         scope = viewModelScope,
-        started = SharingStarted.WhileSubscribed(5000),
+        started = SharingStarted.Eagerly,
         initialValue = emptyList()
     )
 

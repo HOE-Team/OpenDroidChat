@@ -9,6 +9,8 @@ import android.content.Context
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.launch
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
@@ -38,6 +40,7 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Column
 import com.hoeteam.opendroidchat.data.SettingsRepository
+import com.hoeteam.opendroidchat.data.dataStore
 import com.hoeteam.opendroidchat.network.LlmApiService
 import com.hoeteam.opendroidchat.ui.screens.ChatScreen
 import com.hoeteam.opendroidchat.ui.screens.ModelEditScreen
@@ -54,6 +57,11 @@ import com.hoeteam.opendroidchat.viewmodel.ThemeViewModelFactory
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        // 预热 DataStore：在 Activity 创建时触发 DataStore 文件加载，
+        // 确保第一个 Flow 订阅时数据已在内存中，避免冷启动 IO 延迟
+        prewarmDataStore()
+
         setContent {
             // 初始化主题 ViewModel
             val themeViewModel: ThemeViewModel = viewModel(factory = ThemeViewModelFactory(this@MainActivity))
@@ -64,6 +72,27 @@ class MainActivity : ComponentActivity() {
                 Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
                     MainNavigation(themeViewModel)
                 }
+            }
+        }
+    }
+
+    /**
+     * 预加载 DataStore 数据。
+     * 通过提前触发 dataStore.data 的首次读取，让 DataStore 在后台线程
+     * 完成文件加载和解析，减少后续 UI 首次订阅时的等待时间。
+     */
+    private fun prewarmDataStore() {
+        // 使用 lifecycleScope 在后台协程触发 DataStore 读取，提前将数据缓存到内存
+        lifecycleScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+            try {
+                // 只读取一次 DataStore 数据，触发 DataStore 完成反序列化
+                // 使用 kotlinx.coroutines.flow.first() 来只取第一个发射的值
+                applicationContext.dataStore.data.collect { 
+                    // 读取到一次数据后就停止，预热完成
+                    return@collect
+                }
+            } catch (_: Exception) {
+                // 预读取失败不影响主流程，UI 层会正常读取
             }
         }
     }

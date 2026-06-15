@@ -39,15 +39,32 @@ class SettingsRepository(private val context: Context) {
     private val gson = Gson()
     private val listType = object : TypeToken<List<LlmModel>>() {}.type
 
+    // 内存缓存：缓存解密后的模型列表，避免重复解析 JSON 和解密 API Key
+    @Volatile
+    private var cachedDecryptedModels: List<LlmModel>? = null
+
+    // 内存缓存：当前的模型 ID（用于快速判断是否变化）
+    @Volatile
+    private var lastRawJson: String? = null
+
     // 1. 模型列表 Flow (READ: 从 DataStore 读取后 -> 解密 API Key)
+    //    增加内存缓存，避免重复解密
     val allModelsFlow: Flow<List<LlmModel>> = dataStore.data.map { preferences ->
         val jsonString = preferences[PreferencesKeys.MODELS_LIST] ?: "[]"
+
+        // 如果 JSON 未变化且已有缓存，直接返回缓存结果
+        if (jsonString == lastRawJson && cachedDecryptedModels != null) {
+            return@map cachedDecryptedModels!!
+        }
+
+        // 更新缓存标记
+        lastRawJson = jsonString
 
         // 从 JSON 字符串解析出包含加密/占位符 key 的 LlmModel 列表
         val modelsToDecrypt = gson.fromJson<List<LlmModel>>(jsonString, listType) ?: emptyList()
 
         // 遍历列表，解密 API Key
-        modelsToDecrypt.map { model ->
+        val decryptedModels = modelsToDecrypt.map { model ->
             // 检查是否有加密标记
             if (model.apiKey.startsWith("encrypted:")) {
                 try {
@@ -66,9 +83,13 @@ class SettingsRepository(private val context: Context) {
                 model.copy(apiKey = "", name = model.name + " (Key Storage Invalid)")
             }
         }
+
+        // 写入内存缓存
+        cachedDecryptedModels = decryptedModels
+        decryptedModels
     }
 
-    // 2. 当前选中的模型 Flow
+    // 2. 当前选中的模型 Flow (使用缓存优化)
     val currentModelFlow: Flow<LlmModel?> = combine(
         allModelsFlow,
         dataStore.data.map { it[PreferencesKeys.CURRENT_MODEL_ID] }

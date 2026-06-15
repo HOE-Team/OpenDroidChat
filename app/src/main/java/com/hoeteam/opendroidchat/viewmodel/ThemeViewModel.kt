@@ -17,10 +17,11 @@ import kotlinx.coroutines.launch
 class ThemeViewModel(private val settingsRepository: SettingsRepository) : ViewModel() {
     
     // 主题状态 Flow，初始值为 false
+    // 使用 Eagerly 策略，在 ViewModel 创建时立即开始收集，避免切换 tab 后重新加载
     val darkThemeEnabled: StateFlow<Boolean> = settingsRepository.darkThemeFlow
         .stateIn(
             scope = viewModelScope,
-            started = kotlinx.coroutines.flow.SharingStarted.WhileSubscribed(5000),
+            started = kotlinx.coroutines.flow.SharingStarted.Eagerly,
             initialValue = false
         )
 

@@ -17,7 +17,7 @@ android {
         minSdk = 23
         targetSdk = 36
         versionCode = 20
-        versionName = "Stable-1.7-HelloM3Express"
+        versionName = "Stable-1.8-HelloM3ExpressV2"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
