@@ -10,13 +10,16 @@ import android.content.ClipboardManager
 import android.content.Context
 import android.widget.Toast
 import androidx.compose.animation.core.*
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Code
 import androidx.compose.material.icons.filled.ContentCopy
+import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.DoneAll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -25,6 +28,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.hoeteam.opendroidchat.data.Message
 import com.hoeteam.opendroidchat.data.Sender
@@ -87,6 +91,7 @@ fun MessageBubble(
         Column(
             horizontalAlignment = if (isUser) Alignment.End else Alignment.Start
         ) {
+            // 消息气泡 - 宽度自适应内容
             Surface(
                 color = bubbleColor,
                 shape = bubbleShape,
@@ -94,12 +99,26 @@ fun MessageBubble(
                 shadowElevation = 1.dp
             ) {
                 if (isUser) {
-                    Text(
-                        text = message.text,
-                        color = textColor,
-                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
-                        style = MaterialTheme.typography.bodyLarge
-                    )
+                    Column(
+                        modifier = Modifier.widthIn(min = 60.dp)
+                    ) {
+                        if (message.text.isNotBlank()) {
+                            Text(
+                                text = message.text,
+                                color = textColor,
+                                modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+                                style = MaterialTheme.typography.bodyLarge
+                            )
+                        }
+                        // 用户消息底部显示文件 Chip（如果有）
+                        if (message.selectedFile != null) {
+                            FileInfoChip(
+                                fileName = message.selectedFile.fileName,
+                                isCodeFile = message.selectedFile.isCodeFile,
+                                modifier = Modifier.padding(start = 12.dp, bottom = 8.dp, end = 12.dp)
+                            )
+                        }
+                    }
                 } else {
                     hybridMarkdown(
                         message.text,
@@ -143,6 +162,40 @@ fun MessageBubble(
                     modifier = Modifier.size(16.dp)
                 )
             }
+        }
+    }
+}
+
+@Composable
+private fun FileInfoChip(
+    fileName: String,
+    isCodeFile: Boolean,
+    modifier: Modifier = Modifier
+) {
+    Surface(
+        shape = RoundedCornerShape(8.dp),
+        color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.3f)),
+        modifier = modifier.height(28.dp)
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.padding(start = 6.dp, end = 6.dp)
+        ) {
+            Icon(
+                imageVector = if (isCodeFile) Icons.Filled.Code else Icons.Filled.Description,
+                contentDescription = null,
+                modifier = Modifier.size(14.dp),
+                tint = MaterialTheme.colorScheme.onPrimary
+            )
+            Spacer(Modifier.width(4.dp))
+            Text(
+                text = fileName,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onPrimary
+            )
         }
     }
 }

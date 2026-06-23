@@ -46,35 +46,57 @@ class ChatViewModel(
     private val _errorState = MutableSharedFlow<String>()
     val errorState: SharedFlow<String> = _errorState.asSharedFlow()
 
+    // 文件选择状态
+    private val _selectedFile = MutableStateFlow<SelectedFile?>(null)
+    val selectedFile: StateFlow<SelectedFile?> = _selectedFile.asStateFlow()
+
     // ------------------- 聊天逻辑 -------------------
 
     fun updateInputText(newText: String) {
         _inputText.value = newText
     }
 
+    fun setSelectedFile(file: SelectedFile?) {
+        _selectedFile.value = file
+    }
+
+    fun clearSelectedFile() {
+        _selectedFile.value = null
+    }
+
     fun sendMessage() {
         val currentModel = currentModel.value
         val currentText = _inputText.value.trim()
+        val currentFile = _selectedFile.value
 
         if (currentModel == null || currentModel.apiKey.isBlank() || currentModel.modelName.isBlank()) {
             viewModelScope.launch { _errorState.emit("请先配置有效的 LLM API 实例！") }
             return
         }
 
-        if (currentText.isBlank() || _isLoading.value) return
+        if (currentText.isBlank() && currentFile == null || _isLoading.value) return
+        if (currentText.isBlank() && currentFile == null) return
 
-        val userMessage = Message(text = currentText, sender = Sender.USER)
+        // 用户消息只保存文本本身，不包含文件内容
+        val userMessage = Message(text = currentText, sender = Sender.USER, selectedFile = currentFile)
         _messages.update { it + userMessage }
         _inputText.value = ""
+        _selectedFile.value = null
         _isLoading.value = true
 
         viewModelScope.launch {
             val apiMessages = _messages.value
                 .filter { !it.text.contains("LLM API 响应出错") }
-                .map {
+                .map { msg ->
+                    // 如果消息有文件附件，将文件内容合并到 API 请求中
+                    val apiContent = if (msg.selectedFile != null) {
+                        buildUserMessageText(msg.text, msg.selectedFile)
+                    } else {
+                        msg.text
+                    }
                     ApiMessage(
-                        role = if (it.sender == Sender.USER) "user" else "assistant",
-                        content = it.text
+                        role = if (msg.sender == Sender.USER) "user" else "assistant",
+                        content = apiContent
                     )
                 }
 
@@ -128,6 +150,19 @@ class ChatViewModel(
                 }
             }
         }
+    }
+
+    /**
+     * 构建用户消息文本，将文件内容附加到消息中
+     */
+    private fun buildUserMessageText(text: String, file: SelectedFile?): String {
+        if (file == null) return text
+        val fileInfo = if (text.isBlank()) {
+            "以下文件内容：\n文件名：${file.fileName}\n```\n${file.content}\n```"
+        } else {
+            "$text\n\n以下文件内容：\n文件名：${file.fileName}\n```\n${file.content}\n```"
+        }
+        return fileInfo
     }
 
     private fun updateMessageText(id: Long, newText: String, isStreaming: Boolean) {

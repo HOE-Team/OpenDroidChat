@@ -40,13 +40,22 @@ data class Message(
     val text: String,
     val sender: Sender,
     val timestamp: Long = System.currentTimeMillis(),
-    val isStreaming: Boolean = false
+    val isStreaming: Boolean = false,
+    val selectedFile: SelectedFile? = null
 )
 
 enum class Sender {
     USER,
     LLM
 }
+
+// 所选文件的数据模型
+data class SelectedFile(
+    val uri: String,
+    val fileName: String,
+    val isCodeFile: Boolean,
+    val content: String
+)
 
 // ----------------- API 传输数据模型 (用于 Ktor 序列化) -----------------
 

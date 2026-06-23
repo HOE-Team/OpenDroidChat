@@ -5,6 +5,9 @@ The source code is open-sourced under the MIT License.
 */
 package com.hoeteam.opendroidchat.ui.screens
 
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.interaction.collectIsDraggedAsState
@@ -25,6 +28,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.hoeteam.opendroidchat.data.createFilePickerIntent
+import com.hoeteam.opendroidchat.data.selectFileFromUri
 import com.hoeteam.opendroidchat.ui.components.*
 import com.hoeteam.opendroidchat.viewmodel.ChatViewModel
 import com.hoeteam.opendroidchat.viewmodel.ChatViewModelFactory
@@ -37,15 +42,37 @@ fun ChatScreen(
     onNavigateToSettings: () -> Unit,
     onNavigateToModelSettings: () -> Unit
 ) {
+    val context = LocalContext.current
     val currentModel by viewModel.currentModel.collectAsState()
     val messages by viewModel.messages.collectAsState()
     val inputText by viewModel.inputText.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
+    val selectedFile by viewModel.selectedFile.collectAsState()
 
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
     val lazyListState = rememberLazyListState()
     val isDragged by lazyListState.interactionSource.collectIsDraggedAsState()
+
+    // 文件选择器
+    val filePickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        val data = result.data
+        if (result.resultCode == android.app.Activity.RESULT_OK && data != null) {
+            val uri: Uri? = data.data
+            if (uri != null) {
+                val file = selectFileFromUri(context, uri)
+                if (file != null) {
+                    viewModel.setSelectedFile(file)
+                } else {
+                    scope.launch {
+                        snackbarHostState.showSnackbar("无法读取该文件或文件类型不支持")
+                    }
+                }
+            }
+        }
+    }
 
     val isAtBottom by remember {
         derivedStateOf {
@@ -103,7 +130,13 @@ fun ChatScreen(
                 text = inputText,
                 onTextChange = viewModel::updateInputText,
                 onSend = viewModel::sendMessage,
-                isLoading = isLoading
+                isLoading = isLoading,
+                selectedFile = selectedFile,
+                onAddFile = {
+                    val intent = createFilePickerIntent()
+                    filePickerLauncher.launch(intent)
+                },
+                onRemoveFile = viewModel::clearSelectedFile
             )
         },
         floatingActionButton = {
