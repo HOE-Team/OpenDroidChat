@@ -16,8 +16,8 @@ android {
         applicationId = "com.hoeteam.opendroidchat"
         minSdk = 23
         targetSdk = 36
-        versionCode = 20
-        versionName = "Stable-1.8-HelloM3ExpressV2"
+        versionCode = 21
+        versionName = "Stable-1.9-FileUploadUpdate"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
