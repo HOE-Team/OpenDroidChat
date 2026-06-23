@@ -20,7 +20,7 @@ document.addEventListener('DOMContentLoaded',function(){
   // 轮播逻辑
   var currentImage = document.querySelector('.carousel-image.current');
   var nextImage = document.querySelector('.carousel-image.next');
-  var images = ['images/intro.png', 'images/intro2.png', 'images/intro3.png', 'images/intro4.png'];
+  var images = ['images/intro.png', 'images/intro2.png', 'images/intro3.png', 'images/intro4.png', "images/intro5.png"];
   var currentIndex = 0;
 
   function nextSlide() {
