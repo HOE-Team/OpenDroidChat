@@ -1,5 +1,5 @@
 /*
-OpenDroidChat Model Edit Screen - M3 Expressive Refactored
+OpenDroidChat Model Edit Screen
 Copyright (C) 2025-2026 HOE Team. All rights reserved.
 The source code is open-sourced under the MIT License.
 */

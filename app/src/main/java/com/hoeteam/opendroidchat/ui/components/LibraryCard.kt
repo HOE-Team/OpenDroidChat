@@ -1,5 +1,5 @@
 /*
-OpenDroidChat Library Card Component - Optimized for Animations (Flat Theme)
+OpenDroidChat Library Card Component
 Copyright (C) 2025-2026 HOE Team. All rights reserved.
 The source code is open-sourced under the MIT License.
 */

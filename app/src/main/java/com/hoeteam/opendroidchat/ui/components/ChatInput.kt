@@ -1,5 +1,5 @@
 /*
-OpenDroidChat Chat Input Component - M3 Expressive Refactored (Circular Nested & Transparent Background)
+OpenDroidChat Chat Input Component
 Copyright (C) 2025-2026 HOE Team. All rights reserved.
 The source code is open-sourced under the MIT License.
 */
@@ -9,12 +9,12 @@ import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.Spring
+import androidx.compose.foundation.background
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
@@ -28,6 +28,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
@@ -76,7 +77,7 @@ fun ChatInput(
             singleLine = false,
             maxLines = 5,
             enabled = !isLoading,
-            shape = CircleShape,
+            shape = RoundedCornerShape(24.dp),
 
             leadingIcon = {
                 val addBtnScale by animateFloatAsState(
@@ -106,22 +107,20 @@ fun ChatInput(
                     animationSpec = spring(Spring.DampingRatioMediumBouncy)
                 )
 
-                val fabCorner by animateDpAsState(
-                    targetValue = if (isLoading) 10.dp else 18.dp,
+                val fabShape by animateDpAsState(
+                    targetValue = if (isLoading) 6.dp else 10.dp,
                     animationSpec = spring(Spring.DampingRatioLowBouncy)
                 )
 
-                FloatingActionButton(
-                    onClick = { if (isFabEnabled) onSend() },
-                    containerColor = if (isFabEnabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant,
-                    contentColor = if (isFabEnabled) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
-                    shape = RoundedCornerShape(fabCorner),
+                Box(
                     modifier = Modifier
                         .padding(end = 4.dp)
                         .size(36.dp)
-                        .scale(fabScale),
-                    elevation = FloatingActionButtonDefaults.elevation(0.dp, 0.dp, 0.dp, 0.dp),
-                    interactionSource = fabInteractionSource
+                        .scale(fabScale)
+                        .clip(RoundedCornerShape(fabShape))
+                        .background(if (isFabEnabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant)
+                        .clickable(enabled = isFabEnabled) { onSend() },
+                    contentAlignment = Alignment.Center
                 ) {
                     if (isLoading) {
                         CircularProgressIndicator(
@@ -133,7 +132,8 @@ fun ChatInput(
                         Icon(
                             Icons.AutoMirrored.Filled.Send,
                             contentDescription = "发送",
-                            modifier = Modifier.size(16.dp)
+                            modifier = Modifier.size(16.dp),
+                            tint = if (isFabEnabled) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)
                         )
                     }
                 }

@@ -1,5 +1,5 @@
 /*
-OpenDroidChat About Screen - Fixed Download Button & Error Logic
+OpenDroidChat About Screen
 Copyright (C) 2025-2026 HOE Team. All rights reserved.
 The source code is open-sourced under the MIT License.
 */
