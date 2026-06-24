@@ -77,7 +77,7 @@ fun ChatInput(
             singleLine = false,
             maxLines = 5,
             enabled = !isLoading,
-            shape = RoundedCornerShape(24.dp),
+            shape = RoundedCornerShape(20.dp),
 
             leadingIcon = {
                 val addBtnScale by animateFloatAsState(
