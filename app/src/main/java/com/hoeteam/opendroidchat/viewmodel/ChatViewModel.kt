@@ -9,7 +9,9 @@ import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.hoeteam.opendroidchat.data.*
+import com.hoeteam.opendroidchat.network.ChatResult
 import com.hoeteam.opendroidchat.network.LlmApiService
+import com.hoeteam.opendroidchat.network.StreamChunk
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 
@@ -112,6 +114,10 @@ class ChatViewModel(
                 _messages.update { it + initialLlmMessage }
 
                 var fullResponseText = ""
+                var fullReasoningText = ""
+                var isThinkingStreaming = false
+                // 禁用思考模式时忽略响应中的思考内容
+                val shouldIgnoreThinking = !currentModel.enableThinking
 
                 try {
                     apiService.sendChatStream(apiMessages, currentModel)
@@ -122,13 +128,52 @@ class ChatViewModel(
                             _isLoading.value = false
                         }
                         .collect { chunk ->
-                            if (fullResponseText.isEmpty()) {
+                            if (fullResponseText.isEmpty() && chunk.reasoningText == null) {
                                 _isLoading.value = false
                             }
-                            fullResponseText += chunk
-                            updateMessageText(llmMessageId, fullResponseText, isStreaming = true)
+
+                            if (shouldIgnoreThinking) {
+                                // 禁用思考时，只取文本内容，忽略思考内容
+                                if (chunk.content.isNotEmpty()) {
+                                    fullResponseText += chunk.content
+                                }
+                                updateMessageWithReasoning(
+                                    llmMessageId,
+                                    fullResponseText,
+                                    null,
+                                    isStreaming = true,
+                                    isThinkingStreaming = false
+                                )
+                            } else {
+                                // 启用思考时，正常处理思考和文本
+                                if (chunk.reasoningText != null) {
+                                    fullReasoningText = chunk.reasoningText
+                                    if (!isThinkingStreaming) {
+                                        isThinkingStreaming = true
+                                    }
+                                }
+
+                                if (chunk.content.isNotEmpty()) {
+                                    fullResponseText += chunk.content
+                                    isThinkingStreaming = false
+                                }
+
+                                updateMessageWithReasoning(
+                                    llmMessageId,
+                                    fullResponseText,
+                                    fullReasoningText.ifEmpty { null },
+                                    isStreaming = true,
+                                    isThinkingStreaming = isThinkingStreaming
+                                )
+                            }
                         }
-                    updateMessageText(llmMessageId, fullResponseText, isStreaming = false)
+                    updateMessageWithReasoning(
+                        llmMessageId,
+                        fullResponseText,
+                        if (shouldIgnoreThinking) null else fullReasoningText.ifEmpty { null },
+                        isStreaming = false,
+                        isThinkingStreaming = false
+                    )
                 } catch (e: Exception) {
                     _isLoading.value = false
                 } finally {
@@ -137,8 +182,12 @@ class ChatViewModel(
             } else {
                 // 传统非流式请求逻辑
                 try {
-                    val response = apiService.sendChat(apiMessages, currentModel)
-                    val llmMessage = Message(text = response, sender = Sender.LLM)
+                    val result = apiService.sendChat(apiMessages, currentModel)
+                    val llmMessage = Message(
+                        text = result.content,
+                        sender = Sender.LLM,
+                        reasoningText = result.reasoningText
+                    )
                     _messages.update { it + llmMessage }
                 } catch (e: Exception) {
                     val errorMessage = "LLM API 响应出错: ${e.message ?: "未知错误"}"
@@ -170,6 +219,29 @@ class ChatViewModel(
             list.map { msg ->
                 if (msg.id == id) {
                     msg.copy(text = newText, isStreaming = isStreaming)
+                } else {
+                    msg
+                }
+            }
+        }
+    }
+
+    private fun updateMessageWithReasoning(
+        id: Long,
+        newText: String,
+        reasoningText: String?,
+        isStreaming: Boolean,
+        isThinkingStreaming: Boolean = false
+    ) {
+        _messages.update { list ->
+            list.map { msg ->
+                if (msg.id == id) {
+                    msg.copy(
+                        text = newText,
+                        reasoningText = reasoningText,
+                        isStreaming = isStreaming,
+                        isThinkingStreaming = isThinkingStreaming
+                    )
                 } else {
                     msg
                 }

@@ -57,12 +57,28 @@ fun ModelEditScreen(
     var useStream by remember(modelToEdit) {
         mutableStateOf(modelToEdit?.useStream ?: (provider != LlmProvider.Custom))
     }
+    var enableThinking by remember(modelToEdit) { mutableStateOf(modelToEdit?.enableThinking ?: false) }
+    var reasoningEffort by remember(modelToEdit) {
+        mutableStateOf(modelToEdit?.reasoningEffort ?: "high")
+    }
 
     var expanded by remember { mutableStateOf(false) }
+    var effortExpanded by remember { mutableStateOf(false) }
 
     // 改用标准的 TopAppBar 滚动行为，或者固定不滚动
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
     val isSaveEnabled = name.isNotBlank() && apiKey.isNotBlank() && modelName.isNotBlank()
+
+    // 判断当前提供商是否支持思考模式
+    val supportsThinking = provider == LlmProvider.DeepSeek ||
+            provider == LlmProvider.Claude ||
+            provider == LlmProvider.Gemini
+
+    // 判断当前提供商是否支持 reasoning effort
+    val supportsReasoningEffort = enableThinking && (
+            provider == LlmProvider.DeepSeek ||
+                    (provider == LlmProvider.Claude && modelName.isNotBlank())
+            )
 
     Scaffold(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
@@ -115,7 +131,9 @@ fun ModelEditScreen(
                             systemPrompt = systemPrompt.trim(),
                             customApiUrl = customApiUrl.trim().takeIf { it.isNotBlank() && provider == LlmProvider.Custom },
                             appId = appId.trim().takeIf { it.isNotBlank() },
-                            useStream = if (provider == LlmProvider.Custom) useStream else true
+                            useStream = if (provider == LlmProvider.Custom) useStream else true,
+                            enableThinking = enableThinking,
+                            reasoningEffort = if (enableThinking && supportsReasoningEffort) reasoningEffort else null
                         )
                         viewModel.addOrUpdateModel(newModel)
                         onSave()
@@ -261,6 +279,93 @@ fun ModelEditScreen(
                             Text("开启后可实时查看打字机效果", style = MaterialTheme.typography.bodySmall)
                         }
                         Switch(checked = useStream, onCheckedChange = { useStream = it })
+                    }
+                }
+
+                // ===== 思考模式开关 =====
+                if (supportsThinking) {
+                    Spacer(modifier = Modifier.height(12.dp))
+                    HorizontalDivider(thickness = 0.5.dp, color = MaterialTheme.colorScheme.outlineVariant)
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text("启用思考 (Thinking)", style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Bold)
+                            Text(
+                                when (provider) {
+                                    LlmProvider.DeepSeek -> "DeepSeek V4 深度思考"
+                                    LlmProvider.Claude -> "Claude 扩展思考（自适应/预算模式）"
+                                    LlmProvider.Gemini -> "Gemini 深度思考"
+                                    else -> "启用 AI 思考能力"
+                                },
+                                style = MaterialTheme.typography.bodySmall
+                            )
+                        }
+                        Switch(checked = enableThinking, onCheckedChange = { enableThinking = it })
+                    }
+
+                    // ===== 思考深度选择器 =====
+                    if (enableThinking && supportsReasoningEffort) {
+                        Spacer(modifier = Modifier.height(12.dp))
+
+                        val effortOptions = when (provider) {
+                            LlmProvider.DeepSeek -> listOf("low", "medium", "high")
+                            LlmProvider.Claude -> listOf("low", "medium", "high", "max")
+                            else -> listOf("low", "medium", "high")
+                        }
+
+                        val effortLabels = mapOf(
+                            "low" to "低 (Low)",
+                            "medium" to "中 (Medium)",
+                            "high" to "高 (High)",
+                            "max" to "最大 (Max)"
+                        )
+
+                        ExposedDropdownMenuBox(
+                            expanded = effortExpanded,
+                            onExpandedChange = { effortExpanded = !effortExpanded }
+                        ) {
+                            OutlinedTextField(
+                                value = effortLabels[reasoningEffort] ?: reasoningEffort,
+                                onValueChange = {},
+                                readOnly = true,
+                                label = { Text("思考深度 (Reasoning Effort)", fontWeight = FontWeight.Bold) },
+                                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = effortExpanded) },
+                                modifier = Modifier.menuAnchor().fillMaxWidth(),
+                                shape = RoundedCornerShape(16.dp),
+                                colors = OutlinedTextFieldDefaults.colors(
+                                    focusedBorderColor = MaterialTheme.colorScheme.primary,
+                                    unfocusedBorderColor = MaterialTheme.colorScheme.outline
+                                )
+                            )
+                            ExposedDropdownMenu(
+                                expanded = effortExpanded,
+                                onDismissRequest = { effortExpanded = false },
+                                modifier = Modifier.background(MaterialTheme.colorScheme.surfaceContainerHigh)
+                            ) {
+                                effortOptions.forEach { effort ->
+                                    DropdownMenuItem(
+                                        text = {
+                                            Text(
+                                                effortLabels[effort] ?: effort,
+                                                fontWeight = FontWeight.Medium
+                                            )
+                                        },
+                                        onClick = {
+                                            reasoningEffort = effort
+                                            effortExpanded = false
+                                        },
+                                        contentPadding = ExposedDropdownMenuDefaults.ItemContentPadding
+                                    )
+                                }
+                            }
+                        }
                     }
                 }
             }

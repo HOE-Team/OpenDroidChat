@@ -9,6 +9,7 @@ import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
 import android.widget.Toast
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
@@ -20,6 +21,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Code
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Description
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.DoneAll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -28,6 +31,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.hoeteam.opendroidchat.data.Message
@@ -120,11 +124,27 @@ fun MessageBubble(
                         }
                     }
                 } else {
-                    hybridMarkdown(
-                        message.text,
-                        Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
-                        textColor
-                    )
+                    Column(modifier = Modifier.widthIn(min = 60.dp)) {
+                        // 思考内容展示（如果有）
+                        if (!message.reasoningText.isNullOrBlank()) {
+                            ThinkingBlock(
+                                reasoningText = message.reasoningText,
+                                isStreaming = message.isThinkingStreaming
+                            )
+                        }
+
+                        // 常规内容
+                        if (message.text.isNotBlank()) {
+                            hybridMarkdown(
+                                message.text,
+                                Modifier.padding(
+                                    horizontal = 16.dp,
+                                    vertical = if (message.reasoningText.isNullOrBlank()) 12.dp else 8.dp
+                                ),
+                                textColor
+                            )
+                        }
+                    }
                 }
             }
 
@@ -160,6 +180,62 @@ fun MessageBubble(
                     contentDescription = if (copyState == CopyState.Idle) "复制内容" else "已复制",
                     tint = if (copyState == CopyState.Copied) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
                     modifier = Modifier.size(16.dp)
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun ThinkingBlock(
+    reasoningText: String,
+    isStreaming: Boolean
+) {
+    var expanded by remember { mutableStateOf(true) }
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 20.dp, vertical = 16.dp)
+    ) {
+        // 标题栏 - 可折叠
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable { expanded = !expanded },
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = if (isStreaming) "思考中..." else "思考结束",
+                style = MaterialTheme.typography.labelMedium,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.tertiary
+            )
+
+            Spacer(modifier = Modifier.weight(1f))
+
+            Icon(
+                imageVector = if (expanded) Icons.Default.KeyboardArrowDown else Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                contentDescription = if (expanded) "收起" else "展开",
+                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                modifier = Modifier.size(18.dp)
+            )
+        }
+
+        // 思考内容
+        AnimatedVisibility(visible = expanded) {
+            Surface(
+                shape = RoundedCornerShape(8.dp),
+                color = MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.3f),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 8.dp)
+            ) {
+                Text(
+                    text = reasoningText,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f),
+                modifier = Modifier.padding(16.dp)
                 )
             }
         }
