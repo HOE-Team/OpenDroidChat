@@ -17,7 +17,7 @@ android {
         minSdk = 23
         targetSdk = 36
         versionCode = 23
-        versionName = "Stable-1.0-SmarterUpdate"
+        versionName = "Stable-1.11-SmarterUpdate"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
