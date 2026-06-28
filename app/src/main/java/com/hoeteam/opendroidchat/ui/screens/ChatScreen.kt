@@ -31,6 +31,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.hoeteam.opendroidchat.data.createFilePickerIntent
 import com.hoeteam.opendroidchat.data.selectFileFromUri
 import com.hoeteam.opendroidchat.ui.components.*
+import com.hoeteam.opendroidchat.viewmodel.ApiErrorState
 import com.hoeteam.opendroidchat.viewmodel.ChatViewModel
 import com.hoeteam.opendroidchat.viewmodel.ChatViewModelFactory
 import kotlinx.coroutines.launch
@@ -53,6 +54,20 @@ fun ChatScreen(
     val scope = rememberCoroutineScope()
     val lazyListState = rememberLazyListState()
     val isDragged by lazyListState.interactionSource.collectIsDraggedAsState()
+
+    // 收集错误状态并显示 Snackbar 带重试按钮
+    LaunchedEffect(Unit) {
+        viewModel.errorState.collect { error ->
+            val result = snackbarHostState.showSnackbar(
+                message = error.message,
+                actionLabel = "重试",
+                duration = SnackbarDuration.Indefinite
+            )
+            if (result == SnackbarResult.ActionPerformed) {
+                viewModel.retryLastRequest()
+            }
+        }
+    }
 
     // 文件选择器
     val filePickerLauncher = rememberLauncherForActivityResult(
@@ -108,7 +123,43 @@ fun ChatScreen(
     }
 
     Scaffold(
-        snackbarHost = { SnackbarHost(snackbarHostState) },
+        snackbarHost = {
+            SnackbarHost(hostState = snackbarHostState) { data ->
+                val snackbarMessage: String = data.visuals.message
+                Surface(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    color = MaterialTheme.colorScheme.errorContainer,
+                    tonalElevation = 6.dp
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(start = 16.dp, end = 4.dp, top = 10.dp, bottom = 10.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text(
+                            text = snackbarMessage,
+                            color = MaterialTheme.colorScheme.onErrorContainer,
+                            style = MaterialTheme.typography.bodyMedium,
+                            modifier = Modifier.weight(1f)
+                        )
+                        data.visuals.actionLabel?.let { action ->
+                            TextButton(onClick = { data.performAction() }) {
+                                Text(
+                                    text = action,
+                                    color = MaterialTheme.colorScheme.onErrorContainer,
+                                    fontWeight = androidx.compose.ui.text.font.FontWeight.Bold
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        },
         topBar = {
             TopAppBar(
                 windowInsets = WindowInsets(0, 0, 0, 0),
