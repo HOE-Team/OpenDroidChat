@@ -32,8 +32,10 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.hoeteam.opendroidchat.data.SettingsRepository
 import com.hoeteam.opendroidchat.data.UpdateManager
 import com.hoeteam.opendroidchat.network.VersionType
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -44,9 +46,14 @@ fun SettingsScreen(
     onNavigateToChat: () -> Unit,
 ) {
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
     val updateManager = remember { UpdateManager(context) }
+    val settingsRepository = remember { SettingsRepository(context) }
     val currentVersionType by remember { mutableStateOf(updateManager.getCurrentVersionType()) }
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
+
+    // 自动更新检查开关
+    val autoUpdateCheck by settingsRepository.autoUpdateCheckFlow.collectAsState(initial = true)
 
     fun getWarningText(): String? {
         return when (currentVersionType) {
@@ -120,50 +127,67 @@ fun SettingsScreen(
                 }
             }
 
-            Text(
-                text = "通用设置",
-                style = MaterialTheme.typography.labelLarge,
-                color = MaterialTheme.colorScheme.primary,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp)
-            )
-
-            // M3E 风格列表项：带按下微凹反馈
-            SettingsListItem(
-                headline = "深色模式",
-                subhead = "切换应用视觉主题",
-                icon = Icons.Filled.DarkMode,
-                trailing = {
-                    Switch(
-                        checked = currentDarkTheme,
-                        onCheckedChange = onThemeToggle,
-                        colors = SwitchDefaults.colors(
-                            checkedThumbColor = MaterialTheme.colorScheme.primary,
-                            checkedTrackColor = MaterialTheme.colorScheme.primaryContainer
+            // ===== 通用设置 =====
+            SettingsGroup(
+                title = "通用设置",
+                dividerVisible = true
+            ) {
+                SettingsListItem(
+                    headline = "深色模式",
+                    subhead = "切换应用视觉主题",
+                    icon = Icons.Filled.DarkMode,
+                    trailing = {
+                        Switch(
+                            checked = currentDarkTheme,
+                            onCheckedChange = onThemeToggle,
+                            colors = SwitchDefaults.colors(
+                                checkedThumbColor = MaterialTheme.colorScheme.primary,
+                                checkedTrackColor = MaterialTheme.colorScheme.primaryContainer
+                            )
                         )
-                    )
-                }
-            )
+                    }
+                )
+            }
 
-            HorizontalDivider(
-                modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp),
-                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
-            )
+            // ===== 更新设置 =====
+            SettingsGroup(
+                title = "更新",
+                dividerVisible = true
+            ) {
+                SettingsListItem(
+                    headline = "自动检查更新",
+                    subhead = "启动时自动检查新版本并提醒",
+                    icon = Icons.Default.Info,
+                    trailing = {
+                        Switch(
+                            checked = autoUpdateCheck,
+                            onCheckedChange = { enabled ->
+                                scope.launch {
+                                    settingsRepository.setAutoUpdateCheck(enabled)
+                                }
+                            },
+                            colors = SwitchDefaults.colors(
+                                checkedThumbColor = MaterialTheme.colorScheme.primary,
+                                checkedTrackColor = MaterialTheme.colorScheme.primaryContainer
+                            )
+                        )
+                    }
+                )
+            }
 
-            Text(
-                text = "支持与关于",
-                style = MaterialTheme.typography.labelLarge,
-                color = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp)
-            )
-
-            SettingsListItem(
-                headline = "关于 OpenDroidChat",
-                subhead = "版本信息、开源许可与项目详情",
-                icon = Icons.Filled.Info,
-                onClick = onNavigateToAbout,
-                trailing = { Icon(Icons.AutoMirrored.Filled.ArrowForward, null, modifier = Modifier.size(20.dp)) }
-            )
+            // ===== 支持与关于 =====
+            SettingsGroup(
+                title = "支持与关于",
+                dividerVisible = false
+            ) {
+                SettingsListItem(
+                    headline = "关于 OpenDroidChat",
+                    subhead = "版本信息、开源许可与项目详情",
+                    icon = Icons.Filled.Info,
+                    onClick = onNavigateToAbout,
+                    trailing = { Icon(Icons.AutoMirrored.Filled.ArrowForward, null, modifier = Modifier.size(20.dp)) }
+                )
+            }
 
             Spacer(modifier = Modifier.height(32.dp))
         }
@@ -173,6 +197,35 @@ fun SettingsScreen(
 /**
  * M3E 风格的设置列表项，集成了弹性物理反馈
  */
+/**
+ * 统一间距的设置组，包含标题行、列表项和底部可选分割线
+ */
+@Composable
+private fun SettingsGroup(
+    title: String,
+    dividerVisible: Boolean,
+    groupContent: @Composable ColumnScope.() -> Unit
+) {
+    Column(modifier = Modifier.padding(top = 8.dp)) {
+        Text(
+            text = title,
+            style = MaterialTheme.typography.labelLarge,
+            color = MaterialTheme.colorScheme.primary,
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp)
+        )
+
+        groupContent()
+
+        if (dividerVisible) {
+            HorizontalDivider(
+                modifier = Modifier.padding(start = 24.dp, end = 24.dp, top = 8.dp),
+                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+            )
+        }
+    }
+}
+
 @Composable
 private fun SettingsListItem(
     headline: String,

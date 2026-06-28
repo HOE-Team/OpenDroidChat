@@ -18,7 +18,11 @@ import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.automirrored.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -35,13 +39,24 @@ import androidx.navigation.navArgument
 import androidx.navigation.NavType
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.TextButton
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
 import com.hoeteam.opendroidchat.data.SettingsRepository
+import com.hoeteam.opendroidchat.data.UpdateManager
 import com.hoeteam.opendroidchat.data.dataStore
 import com.hoeteam.opendroidchat.network.LlmApiService
+import com.hoeteam.opendroidchat.network.UpdateCheckResult
+import com.hoeteam.opendroidchat.network.VersionType
 import com.hoeteam.opendroidchat.ui.screens.ChatScreen
 import com.hoeteam.opendroidchat.ui.screens.ModelEditScreen
 import com.hoeteam.opendroidchat.ui.screens.ModelSettingsScreen
@@ -53,6 +68,9 @@ import com.hoeteam.opendroidchat.viewmodel.ChatViewModel
 import com.hoeteam.opendroidchat.viewmodel.ChatViewModelFactory
 import com.hoeteam.opendroidchat.viewmodel.ThemeViewModel
 import com.hoeteam.opendroidchat.viewmodel.ThemeViewModelFactory
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.flow.first
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -67,10 +85,93 @@ class MainActivity : ComponentActivity() {
             val themeViewModel: ThemeViewModel = viewModel(factory = ThemeViewModelFactory(this@MainActivity))
             val isDarkTheme by themeViewModel.darkThemeEnabled.collectAsState()
 
+            // 更新检查状态
+            var updateCheckResult by remember { mutableStateOf<UpdateCheckResult?>(null) }
+            var showUpdateDialog by remember { mutableStateOf(false) }
+            val updateManager = remember { UpdateManager(this@MainActivity) }
+
             // 根据存储的主题设置来应用主题
             OpenDroidChatTheme(darkTheme = isDarkTheme) {
                 Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
                     MainNavigation(themeViewModel)
+
+                    // 自动更新检查对话框
+                    if (showUpdateDialog && updateCheckResult?.hasUpdate == true) {
+                        val result = updateCheckResult!!
+                        val versionTag = result.latestVersion ?: ""
+
+                        AlertDialog(
+                            onDismissRequest = { showUpdateDialog = false },
+                            shape = RoundedCornerShape(24.dp),
+                            title = {
+                                Text(
+                                    text = "发现新版本",
+                                    fontWeight = FontWeight.ExtraBold
+                                )
+                            },
+                            text = {
+                                Column {
+                                    if (versionTag.isNotEmpty()) {
+                                        Text(
+                                            text = "新版本: $versionTag",
+                                            style = MaterialTheme.typography.bodyMedium
+                                        )
+                                    }
+                                    Spacer(Modifier.height(12.dp))
+                                    Text(
+                                        text = "是否下载更新?",
+                                        style = MaterialTheme.typography.bodyMedium
+                                    )
+                                }
+                            },
+                            dismissButton = {
+                                Button(
+                                    onClick = {
+                                        updateManager.openDownloadPage(versionTag)
+                                        showUpdateDialog = false
+                                    },
+                                    shape = RoundedCornerShape(12.dp)
+                                ) {
+                                    Icon(Icons.Default.Download, null, modifier = Modifier.size(18.dp))
+                                    Spacer(Modifier.width(8.dp))
+                                    Text("下载新版本", fontWeight = FontWeight.Bold)
+                                }
+                            },
+                            confirmButton = {
+                                OutlinedButton(
+                                    onClick = { showUpdateDialog = false },
+                                    shape = RoundedCornerShape(12.dp)
+                                ) {
+                                    Text("取消")
+                                }
+                            },
+                        )
+                    }
+                }
+            }
+
+            // 启动时异步检查更新（使用 LaunchedEffect 在组合内安全启动协程）
+            LaunchedEffect(Unit) {
+                try {
+                    // 先读取自动更新检查开关（使用 first() 获取一次值）
+                    val settingsRepo = SettingsRepository(this@MainActivity)
+                    val autoCheckEnabled = withContext(Dispatchers.IO) {
+                        settingsRepo.autoUpdateCheckFlow.first()
+                    }
+                    if (!autoCheckEnabled) return@LaunchedEffect
+
+                    val currentType = updateManager.getCurrentVersionType()
+                    if (currentType == VersionType.NIGHTLY) return@LaunchedEffect
+
+                    val result = withContext(Dispatchers.IO) {
+                        updateManager.checkForUpdates(currentType)
+                    }
+                    if (result.hasUpdate && result.error == null) {
+                        updateCheckResult = result
+                        showUpdateDialog = true
+                    }
+                } catch (_: Exception) {
+                    // 更新检查失败不影响正常使用
                 }
             }
         }

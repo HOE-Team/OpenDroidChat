@@ -34,6 +34,7 @@ class SettingsRepository(private val context: Context) {
         val MODELS_LIST = stringPreferencesKey("llm_models_list")
         val CURRENT_MODEL_ID = stringPreferencesKey("current_model_id")
         val DARK_THEME_ENABLED = booleanPreferencesKey("dark_theme_enabled")
+        val AUTO_UPDATE_CHECK = booleanPreferencesKey("auto_update_check")
     }
 
     private val gson = Gson()
@@ -119,6 +120,20 @@ class SettingsRepository(private val context: Context) {
     suspend fun setDarkTheme(isDark: Boolean) {
         dataStore.edit { preferences ->
             preferences[PreferencesKeys.DARK_THEME_ENABLED] = isDark
+        }
+    }
+
+    // ==================== 自动更新检查设置 ====================
+
+    // 8. 自动更新检查开关 Flow（默认开启）
+    val autoUpdateCheckFlow: Flow<Boolean> = dataStore.data.map { preferences ->
+        preferences[PreferencesKeys.AUTO_UPDATE_CHECK] ?: true
+    }
+
+    // 9. 设置自动更新检查
+    suspend fun setAutoUpdateCheck(enabled: Boolean) {
+        dataStore.edit { preferences ->
+            preferences[PreferencesKeys.AUTO_UPDATE_CHECK] = enabled
         }
     }
 

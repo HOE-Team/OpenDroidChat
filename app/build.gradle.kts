@@ -16,8 +16,8 @@ android {
         applicationId = "com.hoeteam.opendroidchat"
         minSdk = 23
         targetSdk = 36
-        versionCode = 22
-        versionName = "Stable-1.10-Thinking"
+        versionCode = 23
+        versionName = "Stable-1.0-SmarterUpdate"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
