@@ -41,7 +41,6 @@ fun ModelSettingsScreen(
     Scaffold(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
-            // 【修改】：改用紧凑型 TopAppBar，并移除 navigationIcon (返回按钮)
             TopAppBar(
                 title = {
                     Text(
@@ -51,7 +50,7 @@ fun ModelSettingsScreen(
                         )
                     )
                 },
-                navigationIcon = {}, // 【修改】：不需要返回按钮，置空
+                navigationIcon = {},
                 windowInsets = WindowInsets(0, 0, 0, 0),
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.surface,

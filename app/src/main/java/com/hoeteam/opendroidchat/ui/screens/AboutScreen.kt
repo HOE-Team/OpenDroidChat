@@ -40,7 +40,8 @@ import kotlinx.coroutines.*
 @Composable
 fun AboutScreen(
     onBack: () -> Unit,
-    onNavigateToLicense: () -> Unit
+    onNavigateToLicense: () -> Unit,
+    onNavigateToLegal: () -> Unit
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -304,6 +305,34 @@ fun AboutScreen(
                 }
             }
 
+            // 法律性页面入口卡片
+            Surface(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .graphicsLayer {
+                        scaleX = scale
+                        scaleY = scale
+                    }
+                    .clickable(
+                        interactionSource = interactionSource,
+                        indication = null,
+                        onClick = onNavigateToLegal
+                    ),
+                shape = RoundedCornerShape(24.dp),
+                color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.2f),
+                border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.1f))
+            ) {
+                Row(
+                    modifier = Modifier.padding(24.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text("法律声明与免责条款", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                        Text("查看免责声明及知识产权相关条款", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                    Icon(Icons.AutoMirrored.Filled.ArrowForward, null, tint = MaterialTheme.colorScheme.primary)
+                }
+            }
             // 版权信息
             Column(
                 modifier = Modifier

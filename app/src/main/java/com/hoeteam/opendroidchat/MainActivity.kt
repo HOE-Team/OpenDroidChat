@@ -62,6 +62,7 @@ import com.hoeteam.opendroidchat.ui.screens.ModelEditScreen
 import com.hoeteam.opendroidchat.ui.screens.ModelSettingsScreen
 import com.hoeteam.opendroidchat.ui.screens.SettingsScreen
 import com.hoeteam.opendroidchat.ui.screens.AboutScreen
+import com.hoeteam.opendroidchat.ui.screens.LegalScreen
 import com.hoeteam.opendroidchat.ui.screens.LicenseScreen
 import com.hoeteam.opendroidchat.ui.theme.OpenDroidChatTheme
 import com.hoeteam.opendroidchat.viewmodel.ChatViewModel
@@ -209,6 +210,7 @@ object Destinations {
     const val ABOUT_SCREEN = "about_app"
     const val LICENSE_SCREEN = "license_screen"
     const val ARG_MODEL_ID = "modelId"
+    const val LEGAL_SCREEN = "legal"
 }
 
 @Composable
@@ -358,17 +360,25 @@ fun MainNavigation(themeViewModel: ThemeViewModel) {
                 )
             }
 
-            // 5. 关于程序界面（修改：添加导航到开源许可的回调）
+            // 5. 关于程序界面
             composable(Destinations.ABOUT_SCREEN) {
                 AboutScreen(
                     onBack = { navController.popBackStack() }, // 返回到 SettingsScreen
-                    onNavigateToLicense = { navController.navigate(Destinations.LICENSE_SCREEN) } // 新增：导航到开源许可界面
+                    onNavigateToLicense = { navController.navigate(Destinations.LICENSE_SCREEN) }, // 导航到开源许可界面
+                    onNavigateToLegal = { navController.navigate(Destinations.LEGAL_SCREEN) } // 导航到法律声明页面
                 )
             }
 
-            // 6. 新增：开源许可界面
+            // 6. 开源许可界面
             composable(Destinations.LICENSE_SCREEN) {
                 LicenseScreen(
+                    onBack = { navController.popBackStack() } // 返回到 AboutScreen
+                )
+            }
+
+            // 7. 法律性和免责声明页面
+            composable(Destinations.LEGAL_SCREEN) {
+                LegalScreen(
                     onBack = { navController.popBackStack() } // 返回到 AboutScreen
                 )
             }
