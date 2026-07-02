@@ -498,6 +498,11 @@ class LlmApiService {
      * 构建 OpenAI 格式的 ChatRequest，包含 thinking 参数
      * 所有支持思考的模型都必须显式传递 thinking 启用/禁用参数，
      * 否则模型可能会默认启用思考，浪费 token。
+     *
+     * 各平台思考模式参数对照：
+     * - DeepSeek: thinking={"type": "enabled/disabled"}, reasoning_effort="high"/"max"
+     * - OpenAI (o-series, GPT-5): reasoning_effort="low"/"medium"/"high"
+     * - Azure OpenAI: 与 OpenAI 一致
      */
     private fun buildOpenAiChatRequest(
         config: LlmModel,
@@ -509,14 +514,19 @@ class LlmApiService {
             model = config.modelName,
             messages = fullMessages,
             stream = stream,
-            thinking = if (config.provider == LlmProvider.DeepSeek && thinkingEnabled) {
+            thinking = if (config.provider == LlmProvider.DeepSeek) {
+                // DeepSeek 必须显式传递 thinking 开关，否则模型可能默认启用思考
                 buildJsonObject {
-                    put("type", JsonPrimitive("enabled"))
+                    put("type", JsonPrimitive(if (thinkingEnabled) "enabled" else "disabled"))
                 }
             } else null,
             enable_thinking = null,
             reasoning_effort = if (thinkingEnabled && config.reasoningEffort != null) {
-                config.reasoningEffort
+                when (config.provider) {
+                    LlmProvider.DeepSeek -> config.reasoningEffort  // "high" / "max"
+                    LlmProvider.OpenAI -> config.reasoningEffort    // "low" / "medium" / "high"
+                    else -> null
+                }
             } else null
         )
     }

@@ -33,7 +33,8 @@ data class LlmModel(
     val appId: String? = null,
     val useStream: Boolean = true, // 是否使用流式传输，默认为 true
     val enableThinking: Boolean = false, // 是否启用思考模式
-    val reasoningEffort: String? = null // 思考深度（high/low/medium/max）
+    val reasoningEffort: String? = null // 思考深度（OpenAI: low/medium/high, DeepSeek: high/max, Claude: low/medium/high/xhigh）
+
 )
 
 // 聊天消息 (用于 UI 展示)
@@ -102,8 +103,9 @@ data class ClaudeThinkingConfig(
 @SuppressLint("UnsafeOptInUsageError")
 @Serializable
 data class ClaudeOutputConfig(
-    val effort: String? = null // "low", "medium", "high", "max" 控制思考深度
+    val effort: String? = null // "low", "medium", "high", "xhigh" 控制思考深度（Claude 4.6+ 自适应模式）
 )
+
 
 @SuppressLint("UnsafeOptInUsageError")
 @Serializable

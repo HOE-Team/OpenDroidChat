@@ -72,18 +72,19 @@ fun ModelEditScreen(
     // 判断当前提供商是否支持思考模式
     val supportsThinking = provider == LlmProvider.DeepSeek ||
             provider == LlmProvider.Claude ||
-            provider == LlmProvider.Gemini
+            provider == LlmProvider.Gemini ||
+            provider == LlmProvider.OpenAI
 
     // 判断当前提供商是否支持 reasoning effort
     val supportsReasoningEffort = enableThinking && (
             provider == LlmProvider.DeepSeek ||
-                    (provider == LlmProvider.Claude && modelName.isNotBlank())
+            provider == LlmProvider.OpenAI ||
+            (provider == LlmProvider.Claude && modelName.isNotBlank())
             )
 
     Scaffold(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
-            // 【修改】：不需要 LargeTopBar，改用紧凑的标准 TopAppBar
             TopAppBar(
                 title = {
                     Text(
@@ -297,11 +298,12 @@ fun ModelEditScreen(
                     ) {
                         Column(modifier = Modifier.weight(1f)) {
                             Text("启用思考 (Thinking)", style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Bold)
-                            Text(
+                    Text(
                                 when (provider) {
                                     LlmProvider.DeepSeek -> "DeepSeek V4 深度思考"
                                     LlmProvider.Claude -> "Claude 扩展思考（自适应/预算模式）"
                                     LlmProvider.Gemini -> "Gemini 深度思考"
+                                    LlmProvider.OpenAI -> "OpenAI o-series / GPT-5 推理"
                                     else -> "启用 AI 思考能力"
                                 },
                                 style = MaterialTheme.typography.bodySmall
@@ -315,16 +317,23 @@ fun ModelEditScreen(
                         Spacer(modifier = Modifier.height(12.dp))
 
                         val effortOptions = when (provider) {
-                            LlmProvider.DeepSeek -> listOf("low", "medium", "high")
-                            LlmProvider.Claude -> listOf("low", "medium", "high", "max")
-                            else -> listOf("low", "medium", "high")
+                            // DeepSeek 文档：思考强度支持 "high" 和 "max"
+                            LlmProvider.DeepSeek -> listOf("high", "max")
+                            // Claude 4.6+ 自适应模式支持 low/medium/high/xhigh
+                            LlmProvider.Claude -> listOf("low", "medium", "high", "xhigh")
+                            // OpenAI o-series / GPT-5 支持 low/medium/high
+                            LlmProvider.OpenAI -> listOf("low", "medium", "high")
+                            // 自定义 API 不支持思考模式
+                            else -> emptyList()
                         }
+
 
                         val effortLabels = mapOf(
                             "low" to "低 (Low)",
                             "medium" to "中 (Medium)",
                             "high" to "高 (High)",
-                            "max" to "最大 (Max)"
+                            "max" to "最大 (Max)",
+                            "xhigh" to "极高 (X-High)"
                         )
 
                         ExposedDropdownMenuBox(
