@@ -43,6 +43,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material.icons.filled.Language
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.appcompat.app.AppCompatDelegate
+import androidx.compose.material.icons.filled.SystemUpdate
 import androidx.core.os.LocaleListCompat
 import java.util.Locale
 
@@ -279,7 +280,7 @@ fun SettingsScreen(
                 SettingsListItem(
                     headline = stringResource(R.string.settings_auto_update),
                     subhead = stringResource(R.string.settings_auto_update_desc),
-                    icon = Icons.Default.Info,
+                    icon = Icons.Default.SystemUpdate,
                     trailing = {
                         Switch(
                             checked = autoUpdateCheck,

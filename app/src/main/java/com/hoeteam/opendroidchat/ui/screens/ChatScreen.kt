@@ -242,12 +242,18 @@ fun ChatScreen(
             }
         },
         floatingActionButton = {
+            // derivedStateOf 的 lambda 只在首次组合时捕获 messages，
+            // 这里用 rememberUpdatedState 保证切换/新建对话后读到的是最新列表，
+            // 否则「到底部」FAB 会被上一段对话的状态错误地继承下来
+            val latestMessages by rememberUpdatedState(messages)
             val showFab by remember {
                 derivedStateOf {
-                    val lastVisibleItem = lazyListState.layoutInfo.visibleItemsInfo.lastOrNull()
-                    if (lastVisibleItem == null) messages.isNotEmpty()
-                    else lastVisibleItem.index < lazyListState.layoutInfo.totalItemsCount - 1 ||
-                            lastVisibleItem.offset + lastVisibleItem.size > lazyListState.layoutInfo.viewportEndOffset + 150
+                    val layoutInfo = lazyListState.layoutInfo
+                    val lastVisibleItem = layoutInfo.visibleItemsInfo.lastOrNull()
+                    latestMessages.isNotEmpty() && lastVisibleItem != null && (
+                        lastVisibleItem.index < layoutInfo.totalItemsCount - 1 ||
+                            lastVisibleItem.offset + lastVisibleItem.size > layoutInfo.viewportEndOffset + 150
+                    )
                 }
             }
 
