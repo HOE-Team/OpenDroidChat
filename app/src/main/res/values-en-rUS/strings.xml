@@ -143,6 +143,14 @@
 
     <string name="legal_updated">Last updated: November 2026</string>
 
+    <!-- First launch legal consent -->
+    <string name="legal_consent_title">Legal &amp; Privacy</string>
+    <string name="legal_consent_message">Before using OpenDroidChat, please read and agree to the Legal &amp; Privacy Policy, which covers the disclaimer, MCP tool call risks, and privacy policy.</string>
+    <string name="legal_consent_view">View Terms</string>
+    <string name="legal_consent_hint">Open the terms first; “Agree and Continue” unlocks afterwards.</string>
+    <string name="legal_consent_agree">Agree and Continue</string>
+    <string name="legal_consent_disagree">Disagree and Exit</string>
+
     <string name="legal_ip_title">Intellectual Property</string>
     <string name="legal_ip_body">The source code of this application is open-sourced under the MIT License. You are free to use, modify, and distribute it in compliance with the license terms.\n\nThird-party open-source libraries used by this application are governed by their respective licenses. See the \"Open Source Licenses\" page for details.\n\nThe name, logo, and related visual elements of this application are the intellectual property of HOE Team and may not be used for commercial purposes without permission.</string>
 

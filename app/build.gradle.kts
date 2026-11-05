@@ -1,23 +1,24 @@
 import java.util.Properties
 import org.gradle.api.GradleException
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
-    id("org.jetbrains.kotlin.plugin.serialization")
+    alias(libs.plugins.kotlin.serialization)
 }
 
 android {
     namespace = "com.hoeteam.opendroidchat"
-    compileSdk = 36
+    compileSdk = 37
 
     defaultConfig {
         applicationId = "com.hoeteam.opendroidchat"
         minSdk = 23
         targetSdk = 36
-        versionCode = 25
-        versionName = "Stable-1.13-MCP"
+        versionCode = 26
+        versionName = "Stable-1.14-ChatHistory"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -85,12 +86,14 @@ android {
         targetCompatibility = JavaVersion.VERSION_11
     }
 
-    kotlinOptions {
-        jvmTarget = "11"
-    }
-
     buildFeatures {
         compose = true
+    }
+}
+
+kotlin {
+    compilerOptions {
+        jvmTarget.set(JvmTarget.JVM_11)
     }
 }
 
@@ -106,6 +109,7 @@ dependencies {
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
+    // androidTest 不会继承 implementation 的 BOM 约束，因此这里必须再声明一次
     androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.ui.test.junit4)
     debugImplementation(libs.androidx.ui.tooling)
@@ -128,11 +132,11 @@ dependencies {
     implementation(libs.io.ktor.ktor.serialization.kotlinx.json6)
 
     // Markdown 渲染 (直接使用 Markwon 以支持深色模式下行内代码主题)
-    implementation("io.noties.markwon:core:4.6.2")
+    implementation(libs.markwon.core)
 
-    implementation("androidx.compose.material:material-icons-core")
-    implementation("androidx.compose.material:material-icons-extended")
+    implementation(libs.androidx.material.icons.core)
+    implementation(libs.androidx.material.icons.extended)
 
     // AppCompat (用于 AppCompatDelegate.setApplicationLocales 多语言支持)
-    implementation("androidx.appcompat:appcompat:1.7.0")
+    implementation(libs.androidx.appcompat)
 }

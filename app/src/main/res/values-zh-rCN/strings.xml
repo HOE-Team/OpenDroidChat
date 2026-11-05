@@ -142,6 +142,14 @@
 
     <string name="legal_updated">最后更新：2026 年 11 月</string>
 
+    <!-- 首次启动法律同意 -->
+    <string name="legal_consent_title">法律与隐私政策</string>
+    <string name="legal_consent_message">使用 OpenDroidChat 前，请阅读并同意《法律与隐私政策》，其中包含免责声明、MCP 工具调用风险说明与隐私权政策。</string>
+    <string name="legal_consent_view">查看条款</string>
+    <string name="legal_consent_hint">请先阅读条款，阅读后即可点击「同意并继续」。</string>
+    <string name="legal_consent_agree">同意并继续</string>
+    <string name="legal_consent_disagree">不同意并退出</string>
+
     <string name="legal_ip_title">知识产权声明</string>
     <string name="legal_ip_body">本程序的源代码基于 MIT 许可证开源发布，您可以在遵守该许可证条款的前提下自由使用、修改和分发本程序。\n\n本程序所使用的第三方开源库均遵循其各自的许可证条款，具体信息请参阅「开放源代码许可」页面。\n\n本程序的名称、标识及相关视觉元素的知识产权归 HOE Team 所有，未经许可不得用于任何商业用途。</string>
 

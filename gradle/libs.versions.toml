@@ -1,5 +1,5 @@
 [versions]
-agp = "9.3.2"
+agp = "9.4.1"
 composeMarkdown = "1.6.0"
 githubComposeMarkdown = "0.3.7"
 ioKtorKtorClientCore4 = "2.3.11"
@@ -18,6 +18,8 @@ activityCompose = "1.8.0"
 composeBom = "2024.04.01"
 navigationCompose = "2.7.7"
 lifecycleViewmodelCompose = "2.8.2"
+markwon = "4.6.2"
+appcompat = "1.8.0"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -44,9 +46,14 @@ androidx-ui-tooling-preview = { group = "androidx.compose.ui", name = "ui-toolin
 androidx-ui-test-manifest = { group = "androidx.compose.ui", name = "ui-test-manifest" }
 androidx-ui-test-junit4 = { group = "androidx.compose.ui", name = "ui-test-junit4" }
 androidx-material3 = { group = "androidx.compose.material3", name = "material3" }
+# 由 androidx.compose BOM 统一管理版本，因此这里不写 version
+androidx-material-icons-core = { module = "androidx.compose.material:material-icons-core" }
+androidx-material-icons-extended = { module = "androidx.compose.material:material-icons-extended" }
+androidx-appcompat = { group = "androidx.appcompat", name = "appcompat", version.ref = "appcompat" }
+markwon-core = { module = "io.noties.markwon:core", version.ref = "markwon" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
 kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
-
+kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }

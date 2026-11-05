@@ -39,6 +39,7 @@ class SettingsRepository(private val context: Context) {
         val MCP_SERVERS_LIST = stringPreferencesKey("mcp_servers_list")
         val ACTIVE_CONVERSATION_ID = stringPreferencesKey("active_conversation_id")
         val RESUME_LAST_CONVERSATION = booleanPreferencesKey("resume_last_conversation")
+        val LEGAL_ACCEPTED = booleanPreferencesKey("legal_accepted")
     }
 
     private val gson = Gson()
@@ -325,6 +326,20 @@ class SettingsRepository(private val context: Context) {
     suspend fun setResumeLastConversation(enabled: Boolean) {
         dataStore.edit { preferences ->
             preferences[PreferencesKeys.RESUME_LAST_CONVERSATION] = enabled
+        }
+    }
+
+    // ==================== 法律条款同意 ====================
+
+    // 20. 是否已同意法律与隐私政策（缺失时视为未同意）
+    val legalAcceptedFlow: Flow<Boolean> = dataStore.data.map { preferences ->
+        preferences[PreferencesKeys.LEGAL_ACCEPTED] ?: false
+    }
+
+    // 21. 记录用户已同意法律条款
+    suspend fun setLegalAccepted(accepted: Boolean) {
+        dataStore.edit { preferences ->
+            preferences[PreferencesKeys.LEGAL_ACCEPTED] = accepted
         }
     }
 }

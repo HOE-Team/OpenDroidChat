@@ -5,6 +5,7 @@ The source code is open-sourced under the MIT License.
 */
 package com.hoeteam.opendroidchat
 
+import android.app.Activity
 import android.content.Context
 import android.os.Bundle
 import androidx.activity.compose.setContent
@@ -28,8 +29,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Modifier
@@ -57,6 +60,7 @@ import com.hoeteam.opendroidchat.network.LlmApiService
 import com.hoeteam.opendroidchat.network.UpdateCheckResult
 import com.hoeteam.opendroidchat.network.VersionType
 import com.hoeteam.opendroidchat.ui.components.ConversationDrawerContent
+import com.hoeteam.opendroidchat.ui.components.LegalConsentDialog
 import com.hoeteam.opendroidchat.ui.screens.ChatScreen
 import com.hoeteam.opendroidchat.ui.screens.ModelEditScreen
 import com.hoeteam.opendroidchat.ui.screens.ModelSettingsScreen
@@ -275,6 +279,14 @@ fun MainNavigation(themeViewModel: ThemeViewModel) {
 
     val viewModel: ChatViewModel = viewModel(factory = ChatViewModelFactory(context))
 
+    // 首次启动的法律条款同意状态
+    val settingsRepository = remember { SettingsRepository(context) }
+    // 初始为 null，等 DataStore 首次读取后再决定是否弹窗，避免老用户看到闪一下的弹窗
+    val legalAccepted by produceState<Boolean?>(initialValue = null) {
+        settingsRepository.legalAcceptedFlow.collect { value = it }
+    }
+    var legalViewed by rememberSaveable { mutableStateOf(false) }
+
     // 历史对话抽屉：与聊天页共享同一个 ViewModel，可直接切换会话
     val conversations by viewModel.conversations.collectAsState()
     val activeConversationId by viewModel.activeConversationId.collectAsState()
@@ -293,6 +305,12 @@ fun MainNavigation(themeViewModel: ThemeViewModel) {
     val currentDestination = navBackStackEntry?.destination
     val configuration = LocalConfiguration.current
     val isLandscape = configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE
+
+    // 只要打开过法律页面，就视为已阅读，允许点击「同意并继续」
+    val isViewingLegal = currentDestination?.route == Destinations.LEGAL_SCREEN
+    LaunchedEffect(isViewingLegal) {
+        if (isViewingLegal) legalViewed = true
+    }
 
     // 每次展开抽屉时刷新历史列表，保证与磁盘上的数据一致
     LaunchedEffect(drawerState.isOpen) {
@@ -533,5 +551,17 @@ fun MainNavigation(themeViewModel: ThemeViewModel) {
                 Content(modifier = Modifier.padding(innerPadding))
             }
         }
+    }
+
+    // 未同意法律条款时强制显示同意弹窗；查看条款期间隐藏，返回后继续
+    if (legalAccepted == false && !isViewingLegal) {
+        LegalConsentDialog(
+            hasReadLegal = legalViewed,
+            onViewLegal = { navController.navigate(Destinations.LEGAL_SCREEN) },
+            onAgree = {
+                scope.launch { settingsRepository.setLegalAccepted(true) }
+            },
+            onDisagree = { (context as? Activity)?.finishAffinity() }
+        )
     }
 }
