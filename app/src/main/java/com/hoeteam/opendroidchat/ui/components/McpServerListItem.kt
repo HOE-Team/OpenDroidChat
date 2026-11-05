@@ -35,10 +35,20 @@ fun McpServerListItem(
         selected = server.enabled,
         onClick = onEdit
     ) {
+        // 开关移到容器最左侧，与模型列表的 RadioButton 位置保持一致
+        Switch(
+            checked = server.enabled,
+            onCheckedChange = onToggleEnabled,
+            colors = SwitchDefaults.colors(
+                checkedThumbColor = MaterialTheme.colorScheme.primary,
+                checkedTrackColor = MaterialTheme.colorScheme.primaryContainer
+            )
+        )
+
         Column(
             modifier = Modifier
                 .weight(1f)
-                .padding(end = 8.dp)
+                .padding(start = 12.dp, end = 8.dp)
         ) {
             Text(
                 text = server.name,
@@ -64,15 +74,6 @@ fun McpServerListItem(
                 overflow = TextOverflow.Ellipsis
             )
         }
-
-        Switch(
-            checked = server.enabled,
-            onCheckedChange = onToggleEnabled,
-            colors = SwitchDefaults.colors(
-                checkedThumbColor = MaterialTheme.colorScheme.primary,
-                checkedTrackColor = MaterialTheme.colorScheme.primaryContainer
-            )
-        )
 
         SettingsCardIconButton(
             icon = Icons.Filled.Edit,
