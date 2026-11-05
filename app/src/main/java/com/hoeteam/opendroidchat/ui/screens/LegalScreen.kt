@@ -108,29 +108,60 @@ fun LegalScreen(
                 }
             }
 
+            // 生成内容与 MCP 工具调用免责
+            LegalSection(
+                title = stringResource(R.string.legal_gen_title),
+                body = stringResource(R.string.legal_gen_body)
+            )
+
+            // 隐私权政策
+            LegalSection(
+                title = stringResource(R.string.legal_privacy_title),
+                body = stringResource(R.string.legal_privacy_body)
+            )
+
             // 知识产权
-            Surface(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(28.dp),
-                color = MaterialTheme.colorScheme.surfaceContainerHigh,
-                tonalElevation = 2.dp
-            ) {
-                Column(modifier = Modifier.padding(24.dp)) {
-                    Text(
-                        text = stringResource(R.string.legal_ip_title),
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold
-                    )
-                    Spacer(modifier = Modifier.height(12.dp))
-                    Text(
-                        text = stringResource(R.string.legal_ip_body),
-                        style = MaterialTheme.typography.bodyLarge,
-                        lineHeight = 24.sp
-                    )
-                }
-            }
+            LegalSection(
+                title = stringResource(R.string.legal_ip_title),
+                body = stringResource(R.string.legal_ip_body)
+            )
+
+            // 条款更新日期
+            Text(
+                text = stringResource(R.string.legal_updated),
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                modifier = Modifier.padding(horizontal = 8.dp)
+            )
 
             Spacer(modifier = Modifier.height(16.dp))
+        }
+    }
+}
+
+/**
+ * 法律条款卡片：所有章节共用同一套外观。
+ */
+@Composable
+private fun LegalSection(title: String, body: String) {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(28.dp),
+        color = MaterialTheme.colorScheme.surfaceContainerHigh,
+        tonalElevation = 2.dp
+    ) {
+        Column(modifier = Modifier.padding(24.dp)) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold
+            )
+            Spacer(modifier = Modifier.height(12.dp))
+            Text(
+                text = body,
+                style = MaterialTheme.typography.bodyLarge,
+                lineHeight = 24.sp
+            )
         }
     }
 }

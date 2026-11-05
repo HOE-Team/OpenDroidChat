@@ -109,8 +109,8 @@
     <string name="about_check_failed">檢查失敗: %s</string>
     <string name="about_license_title">開放原始碼許可</string>
     <string name="about_license_desc">感謝為本專案提供支援的開源庫</string>
-    <string name="about_legal_title">法律宣告與免責條款</string>
-    <string name="about_legal_desc">檢視免責宣告及智慧財產權相關條款</string>
+    <string name="about_legal_title">法律與隱私政策</string>
+    <string name="about_legal_desc">檢視免責宣告、隱私權政策及智慧財產權相關條款</string>
     <string name="about_copyright">© 2025-2026 HOE Team</string>
     <string name="about_license_notice">Open-sourced under MIT License</string>
 
@@ -120,8 +120,8 @@
     <string name="license_back">返回</string>
 
     <!-- 法律宣告介面 -->
-    <string name="legal_title">法律宣告與免責條款</string>
-    <string name="legal_subtitle">使用前請仔細閱讀以下條款</string>
+    <string name="legal_title">法律與隱私政策</string>
+    <string name="legal_subtitle">使用前請仔細閱讀以下條款，包括免責宣告與隱私權政策</string>
     <string name="legal_back">返回</string>
     <string name="legal_disclaimer_title">免責宣告</string>
     <string name="legal_disclaimer_body">本程式（OpenDroidChat）是一款圖形化的大型語言模型（LLM）API 聊天客戶端，其本身不提供、不生成、不創造任何內容。所有透過本程式展示或輸出的內容，均完全由使用者所對接的第三方 API 服務生成，與本程式開發者無關。</string>
@@ -132,6 +132,16 @@
     <string name="legal_disclaimer_clause4">4. 使用者應確保其使用行為符合所在地法律法規及第三方 API 服務提供商的條款與政策。</string>
     <string name="legal_disclaimer_clause5">5. 本程式開發者保留隨時修改本免責宣告的權利，修改後的條款一經發布即生效。建議使用者定期查閱本頁面。</string>
     <string name="legal_disclaimer_full">%1$s\n\n%2$s\n\n%3$s\n\n%4$s\n\n%5$s</string>
+
+    <!-- 生成內容與 MCP 免責 -->
+    <string name="legal_gen_title">生成內容與 MCP 工具呼叫</string>
+    <string name="legal_gen_body">本程式中的回答、程式碼、建議等內容均由您所選擇的第三方大型語言模型（LLM）API 生成，本程式不參與內容的生產、編輯或稽核。AI 生成內容可能不準確、已經過時或具有誤導性，不應作為醫療、法律、金融等專業領域的決策依據。\n\n當您啟用 MCP（Model Context Protocol）伺服器時，模型可以在對話過程中請求呼叫這些伺服器提供的工具。工具呼叫由對應的第三方伺服器實際執行，可能讀取、修改或刪除資料，也可能向外部服務發起請求。請僅啟用來源可信的伺服器，並在執行前自行評估風險。\n\n本程式僅負責轉發模型的工具請求與回傳結果，不對任何 MCP 伺服器的可用性、安全性、回傳值或副作用負責；因呼叫第三方工具導致的任何損失由使用者自行承擔。\n\n對模型生成的程式碼、指令或操作建議，請在執行前自行審查。</string>
+
+    <!-- 隱私權政策 -->
+    <string name="legal_privacy_title">隱私權政策</string>
+    <string name="legal_privacy_body">資料儲存：您的模型設定、API 金鑰（使用 Android Keystore 加密儲存）、對話歷史與偏好設定全部儲存在本裝置的應用程式私有目錄中。本程式不提供雲端同步，也不會把這些資料上傳給開發者或任何第三方伺服器。\n\n網路傳輸：只有在您主動傳送訊息、取得 MCP 工具清單或呼叫工具時，本程式才會直接連線您設定的 API 提供方或 MCP 伺服器，並且僅傳送完成該請求所必需的資訊（對話內容、系統提示、您選擇的檔案內容、工具參數）。這些資訊不經過開發者控制的伺服器。\n\n資訊蒐集：開發者不蒐集、不儲存、不出售任何個人資訊。本程式不包含任何統計、廣告或遙測 SDK，也不會在背景蒐集您的使用資料。\n\n更新檢查：當您開啟「自動檢查更新」或手動檢查更新時，本程式會存取 GitHub Releases 取得版本資訊，該請求不包含您的對話內容或 API 金鑰。\n\n第三方服務：您使用的 LLM 提供方、MCP 伺服器與 GitHub 分別適用其自身的隱私政策，其資料處理行為不受本程式控制，請查閱相應條款。\n\n資料刪除：您可以隨時在歷史對話中刪除單一對話或清空全部記錄；解除安裝本程式會一併移除本機儲存的所有設定與對話資料。\n\n未成年人：若您為未成年人，請在監護人指導下使用本程式，並避免輸入個人敏感資訊。</string>
+
+    <string name="legal_updated">最後更新：2026 年 11 月</string>
 
     <string name="legal_ip_title">智慧財產權宣告</string>
     <string name="legal_ip_body">本程式的原始碼基於 MIT 許可證開源釋出，您可以在遵守該許可證條款的前提下自由使用、修改和分發本程式。\n\n本程式所使用的第三方開源庫均遵循其各自的許可證條款，具體資訊請參閱「開放原始碼許可」頁面。\n\n本程式的名稱、標識及相關視覺元素的智慧財產權歸 HOE Team 所有，未經許可不得用於任何商業用途。</string>
