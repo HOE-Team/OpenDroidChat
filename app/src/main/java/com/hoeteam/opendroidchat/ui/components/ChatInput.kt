@@ -56,9 +56,10 @@ fun ChatInput(
     val isFabEnabled = (text.isNotBlank() || selectedFile != null) && !isLoading
 
     Column(
+        // 外层 Scaffold + NavigationBar 已经处理了系统导航栏 inset，
+        // 这里再叠加一次会让输入框与底部导航之间多出一整条间隙
         modifier = Modifier
             .fillMaxWidth()
-            .windowInsetsPadding(WindowInsets.navigationBars)
             .padding(horizontal = 16.dp, vertical = 4.dp)
     ) {
         if (selectedFile != null) {

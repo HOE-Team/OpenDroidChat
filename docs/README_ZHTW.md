@@ -29,19 +29,52 @@
 * [**Jetpack Compose**[↗]](https://developer.android.com/jetpack/compose) — 宣告式 UI 框架
 * [**Material Design 3 (M3)**[↗]](https://m3.material.io/) — 原生 GUI 設計實現
 * [**Gradle**[↗]](https://gradle.org/) — 建構工具
+* [**Ktor**[↗]](https://ktor.io/) — HTTP 用戶端，負責與 LLM API / MCP 伺服器通訊
+* [**kotlinx.serialization**[↗]](https://github.com/Kotlin/kotlinx.serialization) — 請求與回應資料的 JSON 序列化
+* [**AndroidX DataStore**[↗]](https://developer.android.com/topic/libraries/architecture/datastore) — 設定、偏好與啟動行為儲存
 * [**Markwon**[↗]](https://github.com/noties/Markwon) — 用於渲染 LLM 訊息中的 Markdown
-* [**OkHttp**[↗]](https://square.ac.cn/okhttp/) — 高效、功能強大的 Java/Android HTTP 用戶端。
-* [**Ktor**[↗]](https://ktor.io/) — 基於 Kotlin 協程的非同步後端框架，支援多平台。
 
 ## ✨ 特性
 
-* 支援 Android 6.0(API等級23) 及以上版本
-* 系統原生、美觀的 Material 3 Expressive 介面
-* **支援 Markdown 訊息渲染**（程式碼區塊、標題、連結等）
-* 輕量級，易於空間拮据的裝置使用
-* 可接入多種 LLM API
-* 使用加密，保護使用者LLM API Key
-* 可啟用模型思考，增加AI輸出內容準確性
+### 💬 對話與模型
+
+* 支援 Android 6.0（API 等級 23）及以上版本
+* 原生、美觀的 Material 3 Expressive 介面，支援深色模式與橫向 NavigationRail
+* 內建 OpenAI / Azure OpenAI、Google Gemini、DeepSeek、Dashscope（阿里雲百煉）、Claude，並支援自訂 API
+* 支援串流（打字機）與非串流輸出
+* 思考模式：展示模型推理過程，可依提供商設定思考深度
+* **Markdown 訊息渲染**（程式碼區塊、標題、連結等）
+* 訊息編輯、重新生成、一鍵複製
+* 可將文字 / 程式碼檔案作為上下文傳送給模型
+
+### 🧰 MCP 工具呼叫
+
+* 支援新增多個 [MCP（Model Context Protocol）](https://modelcontextprotocol.io/) 伺服器
+* 可依模型個別開關「允許呼叫 MCP 伺服器」
+* 對話中展示工具呼叫記錄：伺服器、工具名稱、耗時與錯誤資訊
+
+### 🗂️ 歷史對話
+
+* 對話會自動保存在本機，無需手動儲存
+* 頂欄時鐘按鈕開啟側邊抽屜，隨時檢視、繼續或刪除歷史對話
+* 繼續歷史對話時會完整還原訊息上下文，可直接接著聊
+* 支援刪除單一對話、清空全部記錄，最多保留最近 100 個對話
+* 「啟動時恢復上次對話」可在設定中開啟；預設每次啟動都從新對話開始
+
+### 🔒 隱私與安全
+
+* API Key 使用 Android Keystore 加密後儲存
+* 所有設定與對話僅儲存在本機應用程式私有目錄，不含雲端同步
+* 僅直接連線使用者設定的 API 提供商 / MCP 伺服器，不經過開發者伺服器
+* 不包含統計、廣告或遙測 SDK
+* 首次啟動需閱讀並同意法律與隱私政策，不同意可直接退出應用程式
+
+### ⚙️ 設定
+
+* 深色模式
+* 介面語言：跟隨系統 / 简体中文 / 繁體中文 / English
+* 自動檢查更新（透過 GitHub Releases）
+* 啟動時恢復上次對話（預設關閉）
 
 > [!NOTE]
 >
@@ -51,7 +84,20 @@
 > * [x] Google Gemini
 > * [x] DeepSeek
 > * [x] Dashscope (阿里雲百煉)
-> * [x] Claude 
+> * [x] Claude
+> * [x] 自訂 API
+
+## 🔐 隱私與資料
+
+OpenDroidChat 不需要帳號，也不會蒐集任何使用者資料：
+
+* **本機儲存**：模型設定、API Key（Keystore 加密）、對話歷史與偏好設定全部保存在本機應用程式私有目錄中。
+* **按需傳輸**：只有在你傳送訊息、取得 MCP 工具清單或呼叫工具時，用戶端才會直接連線你設定的 API / MCP 服務，並且僅傳送完成該請求所必需的內容（對話、系統提示、你選擇的檔案、工具參數）。
+* **無遙測**：本程式不包含統計、廣告或遙測 SDK，也不會在背景蒐集使用資料。
+* **可刪除**：你可以隨時刪除單一對話或清空全部歷史；解除安裝應用程式會一併移除本機儲存的所有資料。
+* **更新檢查**：開啟自動檢查更新時，僅存取 GitHub Releases 取得版本資訊，請求中不包含任何對話內容或 API Key。
+
+完整條款可在應用程式內「設定 → 關於 → 法律與隱私政策」中查看。
 
 ## 📥 安裝
 
@@ -61,7 +107,7 @@
 
 ## 🛠️ 從原始碼建構
 
-確保已安裝 **Android Studio** 或 **Gradle**。
+確保已安裝 **Android Studio** 或 **Gradle**，以及 **JDK 17 或更高版本**（建議 JDK 21）。
 
 > [!IMPORTANT]
 >
@@ -82,42 +128,79 @@ gradlew.bat assembleDebug   # Windows
 
 建構成功後，APK 位於 `app/build/outputs/apk/`。
 
-**如果要執行Release建構，請參閱 [Release建構指南[↗]](/docs/PERFORM_A_RELEASE_BUILD.md)**
+**如果要執行Release建構，請參閱 [Release建構指南[↗]](PERFORM_A_RELEASE_BUILD.md)**
 
+### 🧪 執行測試
+
+```bash
+# JVM 單元測試
+./gradlew :app:testDebugUnitTest
+
+# 裝置端儀器測試（需要已連線的裝置或模擬器）
+./gradlew :app:connectedDebugAndroidTest
+```
 
 ## 📁 專案結構
 
 ```
 project/
-├─ app/                  # 原始碼
-├─ docs/                 # 文件
-├─ gradle/               # Gradle 配置
-├─ build.gradle.kts      # 專案建構配置
-├─ settings.gradle.kts   # Gradle 設定
-├─ gradlew               # Gradle Wrapper (Linux / macOS)
-├─ gradlew.bat           # Gradle Wrapper (Windows)
-├─ LICENSE               # 許可證
-├─ CODE_OF_CONDUCT.md    # 貢獻者準則
-└─ README.md             # 專案說明
+├─ app/
+│  └─ src/main/java/com/hoeteam/opendroidchat/
+│     ├─ data/          # 模型設定、對話歷史、加密與本機儲存
+│     ├─ network/       # LLM API 與 MCP 用戶端
+│     ├─ ui/            # Compose 介面（screens / components / theme）
+│     ├─ viewmodel/     # 聊天、主題等狀態管理
+│     └─ MainActivity.kt
+├─ docs/                # 文件與多語言 README
+├─ gradle/              # Gradle 設定與 Version Catalog
+├─ build.gradle.kts     # 專案建構設定
+├─ settings.gradle.kts  # Gradle 設定
+├─ gradlew              # Gradle Wrapper (Linux / macOS)
+├─ gradlew.bat          # Gradle Wrapper (Windows)
+├─ LICENSE              # 許可證
+├─ CODE_OF_CONDUCT.md   # 貢獻者準則
+└─ README.md            # 專案說明
 ```
 
 ## 🚀 使用方法
 
-1. 開啟應用
-2. 新增一個實例
-3. 選擇你的大語言模型 API 提供商
-4. 輸入要使用的模型名稱
-5. 輸入你的 LLM API Key
-6. 輸入你的LLM AppID（可選）
-7. 配置一個人格（可選）
-8. 開始聊天！
+### 首次啟動
+
+1. 閱讀並同意「法律與隱私政策」（需要先開啟條款頁面閱讀，之後才能點擊「同意並繼續」）
+2. 如不同意，可選擇直接退出應用程式
+
+### 設定模型
+
+1. 進入「模型」頁，點擊右下角 **+** 新增執行個體
+2. 選擇 API 提供商，填寫模型名稱與 API Key
+3. 選填：Base URL / AppID、系統提示詞，並可開啟串流、思考或 MCP 工具呼叫
+4. 儲存後回到聊天頁即可開始對話
+
+### 聊天
+
+* 輸入訊息後點擊傳送；也可以點擊輸入框左側 **+** 新增文字 / 程式碼檔案作為上下文
+* 訊息下方提供編輯、重新生成與複製按鈕
+* 開啟思考模式後，可展開查看模型的推理過程
+
+### 歷史對話
+
+1. 點擊聊天頁頂欄的時鐘按鈕開啟歷史對話抽屜
+2. 點擊任一對話即可繼續聊天，訊息上下文會自動還原
+3. 點擊對話右側的刪除按鈕可刪除單筆記錄，底部「清空全部」可清除所有歷史
+4. 如希望下次啟動時自動回到上次對話，可在「設定 → 一般設定」中開啟「啟動時恢復上次對話」
+
+### 使用 MCP 工具
+
+1. 進入「MCP」頁，新增 MCP 伺服器（名稱、URL，視需要填寫 API Key）
+2. 在模型設定中開啟「允許呼叫 MCP 伺服器」
+3. 對話時模型會自動請求工具，聊天介面會展示每次呼叫的伺服器、工具與耗時
 
 ## 🤝 貢獻
 
-我們歡迎各種形式的貢獻！請參閱 [CODE_OF_CONDUCT.md[↗]](CODE_OF_CONDUCT.md) 了解貢獻者行為準則。 
+我們歡迎各種形式的貢獻！請參閱 [CODE_OF_CONDUCT.md[↗]](../CODE_OF_CONDUCT.md) 了解貢獻者行為準則。 
 
 歡迎提交：
-- 🐛 Issue - 報告錯誤或提出新功能建議  
+- 🐛 Issue - 回報錯誤或提出新功能建議  
 - 🔧 Pull Request - 直接貢獻程式碼改進
 
 ## 💬 群組
@@ -138,7 +221,7 @@ project/
 
 ## 📄 許可證
 
-本專案基於 [MIT License[↗]](LICENSE) 開源。
+本專案基於 [MIT License[↗]](../LICENSE) 開源。
 
 > [!NOTE]
 > 這份許可證意味著：

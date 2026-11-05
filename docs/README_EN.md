@@ -29,19 +29,52 @@
 * [**Jetpack Compose**[↗]](https://developer.android.com/jetpack/compose) — Declarative UI framework
 * [**Material Design 3 (M3)**[↗]](https://m3.material.io/) — Native GUI design implementation
 * [**Gradle**[↗]](https://gradle.org/) — Build tool
-* [**Markwon**[↗]](https://github.com/noties/Markwon) — For rendering Markdown in LLM messages
-* [**OkHttp**[↗]](https://square.ac.cn/okhttp/) — Efficient, powerful Java/Android HTTP client.
-* [**Ktor**[↗]](https://ktor.io/) — Kotlin coroutine-based asynchronous backend framework, supporting multi-platform.
+* [**Ktor**[↗]](https://ktor.io/) — HTTP client for communicating with LLM APIs and MCP servers
+* [**kotlinx.serialization**[↗]](https://github.com/Kotlin/kotlinx.serialization) — JSON serialization for request and response payloads
+* [**AndroidX DataStore**[↗]](https://developer.android.com/topic/libraries/architecture/datastore) — Settings, preferences, and launch behavior storage
+* [**Markwon**[↗]](https://github.com/noties/Markwon) — Markdown rendering for LLM messages
 
 ## ✨ Features
 
+### 💬 Chat & Models
+
 * Supports Android 6.0 (API level 23) and above
-* Native, beautiful Material 3 Expressive interface
+* Native, beautiful Material 3 Expressive UI with dark mode and a landscape NavigationRail
+* Built-in OpenAI / Azure OpenAI, Google Gemini, DeepSeek, Dashscope (Aliyun Bailian), Claude, plus custom API support
+* Streaming (typewriter) and non-streaming output
+* Thinking mode with a visible reasoning process and per-provider reasoning effort
 * **Markdown message rendering** (code blocks, headings, links, etc.)
-* Lightweight, suitable for devices with limited space
-* Compatible with various LLM APIs
-* Uses encryption to protect user LLM API Keys
-* Enables model thinking to improve AI output accuracy
+* Edit messages, regenerate replies, and copy with one tap
+* Send text or code files as conversation context
+
+### 🧰 MCP Tool Calls
+
+* Add multiple [MCP (Model Context Protocol)](https://modelcontextprotocol.io/) servers
+* Toggle “allow MCP server calls” per model
+* Tool call records (server, tool, duration, errors) are shown inside the conversation
+
+### 🗂️ Chat History
+
+* Conversations are saved locally and automatically
+* The clock button in the top bar opens a side drawer to browse, continue, or delete conversations
+* Continuing a conversation restores the full message context, so you can pick up where you left off
+* Delete a single conversation or clear all of them; the most recent 100 conversations are kept
+* “Resume last conversation on launch” can be enabled in Settings; by default every launch starts a new chat
+
+### 🔒 Privacy & Security
+
+* API keys are encrypted with the Android Keystore before being stored
+* All settings and conversations stay in the app's private storage; there is no cloud sync
+* The app connects directly to the API provider / MCP servers you configure, never through a developer server
+* No analytics, advertising, or telemetry SDKs
+* On first launch you must read and accept the Legal & Privacy Policy; declining exits the app
+
+### ⚙️ Settings
+
+* Dark mode
+* App language: follow system / Simplified Chinese / Traditional Chinese / English
+* Automatic update checks (via GitHub Releases)
+* Resume last conversation on launch (off by default)
 
 > [!NOTE]
 >
@@ -51,7 +84,20 @@
 > * [x] Google Gemini
 > * [x] DeepSeek
 > * [x] Dashscope (Aliyun Bailian)
-> * [x] Claude 
+> * [x] Claude
+> * [x] Custom API
+
+## 🔐 Privacy & Data
+
+OpenDroidChat requires no account and does not collect any user data:
+
+* **Local storage**: model configurations, API keys (Keystore-encrypted), conversation history, and preferences are kept only in the app's private storage on your device.
+* **On-demand transfer**: only when you send a message, fetch MCP tools, or invoke a tool does the client connect directly to your configured API / MCP service, sending only what that request needs (conversation, system prompt, selected files, tool arguments).
+* **No telemetry**: there are no analytics, advertising, or telemetry SDKs, and no usage data is collected in the background.
+* **Deletable**: delete any conversation or clear all history at any time; uninstalling the app removes all data stored on the device.
+* **Update checks**: when enabled, the app only contacts GitHub Releases for version information, and the request contains no conversation content or API keys.
+
+The full terms are available in the app under “Settings → About → Legal & Privacy”.
 
 ## 📥 Installation
 
@@ -61,7 +107,7 @@
 
 ## 🛠️ Building from Source
 
-Ensure you have **Android Studio** or **Gradle** installed.
+Ensure you have **Android Studio** or **Gradle**, and **JDK 17 or newer** (JDK 21 recommended).
 
 > [!IMPORTANT]
 >
@@ -84,37 +130,74 @@ After a successful build, the APK will be located in `app/build/outputs/apk/`.
 
 **For Release builds, please refer to the [Release Build Guide[↗]](PERFORM_A_RELEASE_BUILD_EN.md)**
 
+### 🧪 Running Tests
+
+```bash
+# JVM unit tests
+./gradlew :app:testDebugUnitTest
+
+# On-device instrumentation tests (requires a connected device or emulator)
+./gradlew :app:connectedDebugAndroidTest
+```
 
 ## 📁 Project Structure
 
 ```
 project/
-├─ app/                  # Source code
-├─ docs/                 # Documentation
-├─ gradle/               # Gradle configuration
-├─ build.gradle.kts      # Project build configuration
-├─ settings.gradle.kts   # Gradle settings
-├─ gradlew               # Gradle Wrapper (Linux / macOS)
-├─ gradlew.bat           # Gradle Wrapper (Windows)
-├─ LICENSE               # License
-├─ CODE_OF_CONDUCT.md    # Contributor Covenant
-└─ README.md             # Project README
+├─ app/
+│  └─ src/main/java/com/hoeteam/opendroidchat/
+│     ├─ data/          # Model config, chat history, encryption and local storage
+│     ├─ network/       # LLM API and MCP clients
+│     ├─ ui/            # Compose UI (screens / components / theme)
+│     ├─ viewmodel/     # Chat and theme state management
+│     └─ MainActivity.kt
+├─ docs/                # Documentation and localized READMEs
+├─ gradle/              # Gradle configuration and version catalog
+├─ build.gradle.kts     # Project build configuration
+├─ settings.gradle.kts  # Gradle settings
+├─ gradlew              # Gradle Wrapper (Linux / macOS)
+├─ gradlew.bat          # Gradle Wrapper (Windows)
+├─ LICENSE              # License
+├─ CODE_OF_CONDUCT.md   # Contributor Covenant
+└─ README.md            # Project README
 ```
 
 ## 🚀 Usage
 
-1. Open the app
-2. Add an instance
-3. Select your LLM API provider
-4. Enter the model name you intend to use
-5. Enter your LLM API Key
-6. Enter your LLM AppID (optional)
-7. Configure a persona (optional)
-8. Start chatting!
+### First Launch
+
+1. Read and accept the “Legal & Privacy Policy” (you must open the terms page first; “Agree and Continue” unlocks afterwards)
+2. If you disagree, you can exit the app
+
+### Configure a Model
+
+1. Open the “Models” tab and tap **+** to add an instance
+2. Choose an API provider and fill in the model name and API key
+3. Optional: set a Base URL / AppID and system prompt, and enable streaming, thinking, or MCP tool calls
+4. Save, then return to the chat screen to start talking
+
+### Chatting
+
+* Type a message and send it; tap **+** on the left of the input box to attach a text or code file as context
+* Every message offers edit, regenerate, and copy actions
+* With thinking enabled, expand the block to read the model's reasoning
+
+### Chat History
+
+1. Tap the clock button in the chat top bar to open the history drawer
+2. Tap any conversation to continue it; the full message context is restored automatically
+3. Use the delete button on a conversation, or “Clear all” at the bottom, to remove records
+4. To return to the last conversation automatically on the next launch, enable “Resume last conversation” under “Settings → General”
+
+### Using MCP Tools
+
+1. Open the “MCP” tab and add an MCP server (name, URL, optional API key)
+2. Enable “Allow MCP server calls” in the model configuration
+3. During a conversation the model requests tools automatically, and each call's server, tool, and duration are shown in the chat
 
 ## 🤝 Contributing
 
-We welcome contributions of all forms! Please see [CODE_OF_CONDUCT.md[↗]](CODE_OF_CONDUCT.md) for our contributor code of conduct.
+We welcome contributions of all forms! Please see [CODE_OF_CONDUCT.md[↗]](../CODE_OF_CONDUCT.md) for our contributor code of conduct.
 
 Feel free to submit:
 - 🐛 Issues - to report bugs or suggest new features
@@ -138,7 +221,7 @@ Please verify the authenticity of the application using the following SHA-256 fi
 
 ## 📄 License
 
-This project is open-sourced under the [MIT License[↗]](LICENSE).
+This project is open-sourced under the [MIT License[↗]](../LICENSE).
 
 > [!NOTE]
 > This license means:
