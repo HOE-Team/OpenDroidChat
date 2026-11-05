@@ -26,7 +26,8 @@
     <!-- 模型設定介面 -->
     <string name="model_settings_title">模型例項管理</string>
     <string name="model_settings_add">新增例項</string>
-    <string name="model_settings_empty">您還沒有設定任何模型。\n點選右下角的 \'+\' 按鈕開始新增。</string>
+    <string name="model_settings_empty_title">還沒有模型實例</string>
+    <string name="model_settings_empty">點擊右下角的「+」按鈕新增第一個模型</string>
 
     <!-- 模型編輯介面 -->
     <string name="model_edit_title_add">新增模型</string>
@@ -192,7 +193,8 @@
     <!-- MCP 伺服器介面 -->
     <string name="mcp_settings_title">MCP 伺服器</string>
     <string name="mcp_settings_add">新增伺服器</string>
-    <string name="mcp_settings_empty">您尚未設定任何 MCP 伺服器。\n點擊右下角的 \'+\' 按鈕開始新增。</string>
+    <string name="mcp_settings_empty_title">還沒有 MCP 伺服器</string>
+    <string name="mcp_settings_empty">點擊右下角的「+」按鈕新增第一個伺服器</string>
     <string name="mcp_back">返回</string>
 
     <string name="mcp_edit_title_add">新增 MCP 伺服器</string>

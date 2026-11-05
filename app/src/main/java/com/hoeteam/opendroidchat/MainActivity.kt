@@ -328,7 +328,7 @@ fun MainNavigation(themeViewModel: ThemeViewModel) {
                             icon = {
                                 when (route) {
                                     Destinations.CHAT_SCREEN -> Icon(Icons.AutoMirrored.Filled.Chat, contentDescription = label)
-                                    Destinations.MODEL_SETTINGS -> Icon(Icons.AutoMirrored.Filled.List, contentDescription = label)
+                                    Destinations.MODEL_SETTINGS -> Icon(Icons.Filled.AutoAwesome, contentDescription = label)
                                     Destinations.MCP_SCREEN -> Icon(Icons.Filled.Storage, contentDescription = label)
                                     Destinations.SETTINGS_SCREEN -> Icon(Icons.Filled.Settings, contentDescription = label)
                                     else -> Icon(Icons.Filled.MoreVert, contentDescription = label)
@@ -348,7 +348,7 @@ fun MainNavigation(themeViewModel: ThemeViewModel) {
                             icon = {
                                 when (route) {
                                     Destinations.CHAT_SCREEN -> Icon(Icons.AutoMirrored.Filled.Chat, contentDescription = label)
-                                    Destinations.MODEL_SETTINGS -> Icon(Icons.AutoMirrored.Filled.List, contentDescription = label)
+                                    Destinations.MODEL_SETTINGS -> Icon(Icons.Filled.AutoAwesome, contentDescription = label)
                                     Destinations.MCP_SCREEN -> Icon(Icons.Filled.Storage, contentDescription = label)
                                     Destinations.SETTINGS_SCREEN -> Icon(Icons.Filled.Settings, contentDescription = label)
                                     else -> Icon(Icons.Filled.MoreVert, contentDescription = label)

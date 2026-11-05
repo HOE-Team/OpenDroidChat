@@ -12,6 +12,8 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.SpeakerNotesOff
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
@@ -19,7 +21,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.res.stringResource
@@ -28,6 +29,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.hoeteam.opendroidchat.R
 
+/**
+ * 完全没有配置模型时的主页空状态。
+ *
+ * 空状态部分与「模型列表 / MCP 列表」共用 [EmptyState] 的
+ * 「大图标 + 大标题 + 小文字」设计，下方保留跳转到模型管理的 XL 按钮。
+ */
 @Composable
 fun EmptyConfigScreen(onNavigateToModelSettings: () -> Unit) {
     val interactionSource = remember { MutableInteractionSource() }
@@ -43,32 +50,15 @@ fun EmptyConfigScreen(onNavigateToModelSettings: () -> Unit) {
         label = "XLButtonScale"
     )
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(32.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
+    EmptyState(
+        icon = Icons.Filled.SpeakerNotesOff,
+        title = stringResource(R.string.chat_empty_config_title),
+        description = stringResource(R.string.chat_empty_config_desc),
+        modifier = Modifier.fillMaxSize()
     ) {
-        // M3E 风格：更具表现力的标题文字
-        Text(
-            text = stringResource(R.string.chat_empty_config_title),
-            style = MaterialTheme.typography.headlineLarge,
-            fontWeight = FontWeight.ExtraBold,
-            color = MaterialTheme.colorScheme.primary
-        )
-        
-        Spacer(Modifier.height(8.dp))
-        
-        Text(
-            text = stringResource(R.string.chat_empty_config_desc),
-            style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-        
-        Spacer(Modifier.height(48.dp))
-        
-        // M3E Extra Large Button (XL Button) 重构
+        Spacer(Modifier.height(40.dp))
+
+        // M3E Extra Large Button (XL Button)：跳转到模型管理，逻辑保持不变
         Button(
             onClick = onNavigateToModelSettings,
             interactionSource = interactionSource,

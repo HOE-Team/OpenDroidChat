@@ -26,7 +26,8 @@
     <!-- Model Settings Screen -->
     <string name="model_settings_title">Model Instances</string>
     <string name="model_settings_add">Add Instance</string>
-    <string name="model_settings_empty">You haven\'t configured any models yet.\nTap the \'+\' button at the bottom right to get started.</string>
+    <string name="model_settings_empty_title">No model instances yet</string>
+    <string name="model_settings_empty">Tap the + button at the bottom right to add your first model</string>
 
     <!-- Model Edit Screen -->
     <string name="model_edit_title_add">Add New Model</string>
@@ -192,7 +193,8 @@
     <!-- MCP Server Screens -->
     <string name="mcp_settings_title">MCP Servers</string>
     <string name="mcp_settings_add">Add Server</string>
-    <string name="mcp_settings_empty">You haven\'t configured any MCP servers yet.\nTap the \'+\' button at the bottom right to get started.</string>
+    <string name="mcp_settings_empty_title">No MCP servers yet</string>
+    <string name="mcp_settings_empty">Tap the + button at the bottom right to add your first server</string>
     <string name="mcp_back">Back</string>
 
     <string name="mcp_edit_title_add">Add MCP Server</string>

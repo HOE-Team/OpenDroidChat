@@ -14,6 +14,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -25,6 +26,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.hoeteam.opendroidchat.R
+import com.hoeteam.opendroidchat.ui.components.EmptyState
 import com.hoeteam.opendroidchat.ui.components.ModelListItem
 import com.hoeteam.opendroidchat.viewmodel.ChatViewModel
 import com.hoeteam.opendroidchat.viewmodel.ChatViewModelFactory
@@ -72,30 +74,21 @@ fun ModelSettingsScreen(
             }
         }
     ) { paddingValues ->
-        LazyColumn(
-            modifier = Modifier
-                .padding(paddingValues)
-                .fillMaxSize(),
-            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            if (allModels.isEmpty()) {
-                item {
-                    Surface(
-                        modifier = Modifier.fillMaxWidth().padding(16.dp),
-                        shape = RoundedCornerShape(24.dp),
-                        color = MaterialTheme.colorScheme.surfaceContainer
-                    ) {
-                        Text(
-                            stringResource(R.string.model_settings_empty),
-                            modifier = Modifier.padding(24.dp),
-                            style = MaterialTheme.typography.bodyLarge,
-                            lineHeight = 24.sp,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                }
-            } else {
+        if (allModels.isEmpty()) {
+            EmptyState(
+                icon = Icons.Filled.AutoAwesome,
+                title = stringResource(R.string.model_settings_empty_title),
+                description = stringResource(R.string.model_settings_empty),
+                modifier = Modifier.padding(paddingValues)
+            )
+        } else {
+            LazyColumn(
+                modifier = Modifier
+                    .padding(paddingValues)
+                    .fillMaxSize(),
+                contentPadding = PaddingValues(vertical = 12.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
                 items(allModels, key = { it.id }) { model ->
                     ModelListItem(
                         model = model,

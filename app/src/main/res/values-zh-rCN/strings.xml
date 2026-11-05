@@ -22,7 +22,11 @@
     <!-- 模型设置界面 -->
     <string name="model_settings_title">模型实例管理</string>
     <string name="model_settings_add">添加新实例</string>
-    <string name="model_settings_empty">您还没有配置任何模型。\n点击右下角的 \'+\' 按钮开始添加。</string>
+    <string name="model_settings_empty_title">还没有模型实例</string>
+    <string name="model_settings_empty">点击右下角的「+」按钮添加第一个模型</string>
+
+    <string name="mcp_settings_empty_title">还没有 MCP 服务器</string>
+    <string name="mcp_settings_empty">点击右下角的「+」按钮添加第一个服务器</string>
 
     <!-- 模型编辑界面 -->
     <string name="model_edit_title_add">添加新模型</string>
