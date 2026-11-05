@@ -20,6 +20,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AddComment
 import androidx.compose.material.icons.filled.ArrowDownward
+import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -30,6 +31,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.hoeteam.opendroidchat.R
@@ -45,11 +47,14 @@ import kotlinx.coroutines.launch
 @Composable
 fun ChatScreen(
     viewModel: ChatViewModel = viewModel(factory = ChatViewModelFactory(LocalContext.current)),
+    onOpenHistoryDrawer: () -> Unit,
     onNavigateToSettings: () -> Unit,
     onNavigateToModelSettings: () -> Unit
 ) {
     val context = LocalContext.current
     val currentModel by viewModel.currentModel.collectAsState()
+    val conversationTitle by viewModel.conversationTitle.collectAsState()
+    val activeConversationId by viewModel.activeConversationId.collectAsState()
     val messages by viewModel.messages.collectAsState()
     val inputText by viewModel.inputText.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
@@ -124,6 +129,13 @@ fun ChatScreen(
         }
     }
 
+    // 打开/切换历史对话后直接定位到最后一条消息
+    LaunchedEffect(activeConversationId) {
+        if (activeConversationId != null && messages.isNotEmpty()) {
+            lazyListState.scrollToItem(messages.lastIndex, scrollOffset = 100000)
+        }
+    }
+
     if (currentModel == null) {
         EmptyConfigScreen(onNavigateToModelSettings = onNavigateToModelSettings)
         return
@@ -171,14 +183,35 @@ fun ChatScreen(
             TopAppBar(
                 windowInsets = WindowInsets(0, 0, 0, 0),
                 title = {
-                    Text(
-                        currentModel?.name ?: "OpenDroidChat",
-                        style = MaterialTheme.typography.titleLarge
-                    )
+                    Column {
+                        Text(
+                            currentModel?.name ?: "OpenDroidChat",
+                            style = MaterialTheme.typography.titleLarge,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                        // 当前会话标题，方便确认正在延续哪一段历史
+                        conversationTitle?.let { title ->
+                            Text(
+                                text = title,
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
+                    }
                 },
                 actions = {
-                    // 新建对话：清空当前会话并开始新对话
-                    IconButton(onClick = { viewModel.clearChat() }) {
+                    // 展开历史对话抽屉
+                    IconButton(onClick = onOpenHistoryDrawer) {
+                        Icon(
+                            Icons.Filled.History,
+                            contentDescription = stringResource(R.string.chat_history)
+                        )
+                    }
+                    // 新建对话：保存当前会话后清空并从新对话开始
+                    IconButton(onClick = { viewModel.clearChat() }, enabled = !isLoading) {
                         Icon(
                             Icons.Filled.AddComment,
                             contentDescription = stringResource(R.string.chat_new_conversation)

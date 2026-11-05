@@ -29,6 +29,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Modifier
@@ -55,6 +56,7 @@ import com.hoeteam.opendroidchat.data.dataStore
 import com.hoeteam.opendroidchat.network.LlmApiService
 import com.hoeteam.opendroidchat.network.UpdateCheckResult
 import com.hoeteam.opendroidchat.network.VersionType
+import com.hoeteam.opendroidchat.ui.components.ConversationDrawerContent
 import com.hoeteam.opendroidchat.ui.screens.ChatScreen
 import com.hoeteam.opendroidchat.ui.screens.ModelEditScreen
 import com.hoeteam.opendroidchat.ui.screens.ModelSettingsScreen
@@ -273,6 +275,13 @@ fun MainNavigation(themeViewModel: ThemeViewModel) {
 
     val viewModel: ChatViewModel = viewModel(factory = ChatViewModelFactory(context))
 
+    // 历史对话抽屉：与聊天页共享同一个 ViewModel，可直接切换会话
+    val conversations by viewModel.conversations.collectAsState()
+    val activeConversationId by viewModel.activeConversationId.collectAsState()
+    val isGenerating by viewModel.isLoading.collectAsState()
+    val drawerState = rememberDrawerState(DrawerValue.Closed)
+    val scope = rememberCoroutineScope()
+
     val screens = listOf(
         Destinations.CHAT_SCREEN to stringResource(R.string.nav_chat),
         Destinations.MODEL_SETTINGS to stringResource(R.string.nav_models),
@@ -284,6 +293,11 @@ fun MainNavigation(themeViewModel: ThemeViewModel) {
     val currentDestination = navBackStackEntry?.destination
     val configuration = LocalConfiguration.current
     val isLandscape = configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE
+
+    // 每次展开抽屉时刷新历史列表，保证与磁盘上的数据一致
+    LaunchedEffect(drawerState.isOpen) {
+        if (drawerState.isOpen) viewModel.refreshConversations()
+    }
 
     // 统一的根屏幕导航逻辑
     val navigateToRootScreen: (String) -> Unit = { route ->
@@ -361,6 +375,8 @@ fun MainNavigation(themeViewModel: ThemeViewModel) {
             composable(Destinations.CHAT_SCREEN) {
                 ChatScreen(
                     viewModel = viewModel,
+                    // 从聊天页顶栏展开历史对话抽屉
+                    onOpenHistoryDrawer = { scope.launch { drawerState.open() } },
                     // 允许从 ChatScreen 内部（如配置为空时）导航到通用设置
                     onNavigateToSettings = { navigateToRootScreen(Destinations.SETTINGS_SCREEN) },
                     // FIX: 新增导航到模型列表的回调 (用于 EmptyConfigScreen 按钮)
@@ -475,18 +491,47 @@ fun MainNavigation(themeViewModel: ThemeViewModel) {
         }
     }
 
-    if (isLandscape) {
-        // 横屏布局：左侧 NavigationRail，右侧内容
-        Row(modifier = Modifier.fillMaxSize()) {
-            NavigationComponent()
-            Content()
+    ModalNavigationDrawer(
+        drawerState = drawerState,
+        // 只在聊天页允许从屏幕边缘滑出抽屉，避免干扰其它页面的手势
+        gesturesEnabled = currentDestination?.route == Destinations.CHAT_SCREEN,
+        drawerContent = {
+            ModalDrawerSheet {
+                ConversationDrawerContent(
+                    conversations = conversations,
+                    activeConversationId = activeConversationId,
+                    isGenerating = isGenerating,
+                    onNewConversation = {
+                        if (!isGenerating) {
+                            viewModel.clearChat()
+                            scope.launch { drawerState.close() }
+                        }
+                    },
+                    onOpenConversation = { summary ->
+                        if (!isGenerating) {
+                            viewModel.openConversation(summary.id)
+                            scope.launch { drawerState.close() }
+                        }
+                    },
+                    onDeleteConversation = { summary -> viewModel.deleteConversation(summary.id) },
+                    onClearAllConversations = { viewModel.deleteAllConversations() }
+                )
+            }
         }
-    } else {
-        // 竖屏布局：底部 NavigationBar，上方内容
-        Scaffold(
-            bottomBar = { NavigationComponent() }
-        ) { innerPadding ->
-            Content(modifier = Modifier.padding(innerPadding))
+    ) {
+        if (isLandscape) {
+            // 横屏布局：左侧 NavigationRail，右侧内容
+            Row(modifier = Modifier.fillMaxSize()) {
+                NavigationComponent()
+                Content()
+            }
+        } else {
+            // 竖屏布局：底部 NavigationBar，上方内容
+            Scaffold(
+                bottomBar = { NavigationComponent() }
+            ) { innerPadding ->
+                Content(modifier = Modifier.padding(innerPadding))
+            }
         }
     }
 }

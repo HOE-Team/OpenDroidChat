@@ -74,6 +74,8 @@
     <string name="settings_section_general">General</string>
     <string name="settings_dark_mode">Dark Mode</string>
     <string name="settings_dark_mode_desc">Toggle the app\'s visual theme</string>
+    <string name="settings_resume_last_conversation">Resume last conversation</string>
+    <string name="settings_resume_last_conversation_desc">When off, each launch starts a new conversation</string>
     <string name="settings_section_language">Language</string>
     <string name="settings_app_language">App Language</string>
     <string name="settings_language_follow_system">Follow System</string>
@@ -218,4 +220,21 @@
     <string name="message_mcp_tools_title">MCP tool calls (%1$d)</string>
     <string name="message_mcp_call_item">%1$s · %2$s · %3$d ms</string>
     <string name="message_mcp_loading">Calling %1$s · %2$s…</string>
+    <!-- History conversations -->
+    <string name="chat_history">History</string>
+    <string name="history_title">History</string>
+    <string name="history_empty">No conversations yet.\nSend your first message and it will be saved here automatically.</string>
+    <string name="history_delete">Delete conversation</string>
+    <string name="history_delete_confirm_title">Delete this conversation?</string>
+    <string name="history_delete_confirm_message">“%1$s” will be permanently removed from this device. This cannot be undone.</string>
+    <string name="history_delete_confirm">Delete</string>
+    <string name="history_cancel">Cancel</string>
+    <string name="history_clear_all">Clear all</string>
+    <string name="history_clear_all_confirm_title">Clear all conversations?</string>
+    <string name="history_clear_all_confirm_message">All conversations will be permanently removed from this device. This cannot be undone.</string>
+    <string name="history_clear_all_confirm">Clear</string>
+    <string name="history_message_count">%1$d messages</string>
+    <string name="history_active">Current</string>
+    <string name="history_untitled">New chat</string>
+    <string name="history_busy">Generating a reply, please wait before switching</string>
 </resources>

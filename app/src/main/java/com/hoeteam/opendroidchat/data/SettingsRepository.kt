@@ -37,6 +37,8 @@ class SettingsRepository(private val context: Context) {
         val AUTO_UPDATE_CHECK = booleanPreferencesKey("auto_update_check")
         val APP_LANGUAGE = stringPreferencesKey("app_language")
         val MCP_SERVERS_LIST = stringPreferencesKey("mcp_servers_list")
+        val ACTIVE_CONVERSATION_ID = stringPreferencesKey("active_conversation_id")
+        val RESUME_LAST_CONVERSATION = booleanPreferencesKey("resume_last_conversation")
     }
 
     private val gson = Gson()
@@ -292,4 +294,38 @@ class SettingsRepository(private val context: Context) {
             }
         }
     }
+
+    // ==================== 历史对话 ====================
+
+    // 16. 当前打开的会话 ID Flow（null 表示当前是未保存的新对话）
+    //     记录它可以让应用在冷启动后自动恢复上次的对话
+    val activeConversationIdFlow: Flow<String?> = dataStore.data.map { preferences ->
+        preferences[PreferencesKeys.ACTIVE_CONVERSATION_ID]
+    }
+
+    // 17. 记住/清除当前会话 ID
+    suspend fun setActiveConversationId(conversationId: String?) {
+        dataStore.edit { preferences ->
+            if (conversationId.isNullOrBlank()) {
+                preferences.remove(PreferencesKeys.ACTIVE_CONVERSATION_ID)
+            } else {
+                preferences[PreferencesKeys.ACTIVE_CONVERSATION_ID] = conversationId
+            }
+        }
+    }
+
+    // ==================== 启动行为 ====================
+
+    // 18. 启动时是否恢复上次对话 Flow（默认 false：每次启动都从新对话开始）
+    val resumeLastConversationFlow: Flow<Boolean> = dataStore.data.map { preferences ->
+        preferences[PreferencesKeys.RESUME_LAST_CONVERSATION] ?: false
+    }
+
+    // 19. 设置启动时是否恢复上次对话
+    suspend fun setResumeLastConversation(enabled: Boolean) {
+        dataStore.edit { preferences ->
+            preferences[PreferencesKeys.RESUME_LAST_CONVERSATION] = enabled
+        }
+    }
 }
+

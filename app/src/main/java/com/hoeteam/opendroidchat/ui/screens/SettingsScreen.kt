@@ -19,6 +19,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.DarkMode
+import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.*
@@ -62,6 +63,9 @@ fun SettingsScreen(
 
     // 自动更新检查开关
     val autoUpdateCheck by settingsRepository.autoUpdateCheckFlow.collectAsState(initial = true)
+
+    // 启动时是否恢复上次对话（默认关闭，即每次启动都是新对话）
+    val resumeLastConversation by settingsRepository.resumeLastConversationFlow.collectAsState(initial = false)
 
     // 应用语言
     val appLanguage by settingsRepository.appLanguageFlow.collectAsState(initial = "")
@@ -166,6 +170,26 @@ fun SettingsScreen(
                         Switch(
                             checked = currentDarkTheme,
                             onCheckedChange = onThemeToggle,
+                            colors = SwitchDefaults.colors(
+                                checkedThumbColor = MaterialTheme.colorScheme.primary,
+                                checkedTrackColor = MaterialTheme.colorScheme.primaryContainer
+                            )
+                        )
+                    }
+                )
+
+                SettingsListItem(
+                    headline = stringResource(R.string.settings_resume_last_conversation),
+                    subhead = stringResource(R.string.settings_resume_last_conversation_desc),
+                    icon = Icons.Filled.History,
+                    trailing = {
+                        Switch(
+                            checked = resumeLastConversation,
+                            onCheckedChange = { enabled ->
+                                scope.launch {
+                                    settingsRepository.setResumeLastConversation(enabled)
+                                }
+                            },
                             colors = SwitchDefaults.colors(
                                 checkedThumbColor = MaterialTheme.colorScheme.primary,
                                 checkedTrackColor = MaterialTheme.colorScheme.primaryContainer

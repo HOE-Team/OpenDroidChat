@@ -74,6 +74,8 @@
     <string name="settings_section_general">通用設定</string>
     <string name="settings_dark_mode">深色模式</string>
     <string name="settings_dark_mode_desc">切換應用視覺主題</string>
+    <string name="settings_resume_last_conversation">啟動時恢復上次對話</string>
+    <string name="settings_resume_last_conversation_desc">關閉時，每次啟動都會開始一段新對話</string>
     <string name="settings_section_language">語言</string>
     <string name="settings_app_language">程式語言 (Language)</string>
     <string name="settings_language_follow_system">跟隨系統</string>
@@ -218,4 +220,21 @@
     <string name="message_mcp_tools_title">MCP 工具呼叫 (%1$d)</string>
     <string name="message_mcp_call_item">%1$s · %2$s · %3$d ms</string>
     <string name="message_mcp_loading">正在呼叫 %1$s · %2$s…</string>
+    <!-- 歷史對話 -->
+    <string name="chat_history">歷史對話</string>
+    <string name="history_title">歷史對話</string>
+    <string name="history_empty">還沒有歷史對話。\n發送第一條訊息後，對話會自動保存在這裡。</string>
+    <string name="history_delete">刪除對話</string>
+    <string name="history_delete_confirm_title">刪除該對話？</string>
+    <string name="history_delete_confirm_message">「%1$s」將從本機永久移除，此操作無法復原。</string>
+    <string name="history_delete_confirm">刪除</string>
+    <string name="history_cancel">取消</string>
+    <string name="history_clear_all">清空全部</string>
+    <string name="history_clear_all_confirm_title">清空全部歷史對話？</string>
+    <string name="history_clear_all_confirm_message">所有歷史對話都將從本機永久移除，此操作無法復原。</string>
+    <string name="history_clear_all_confirm">清空</string>
+    <string name="history_message_count">%1$d 則訊息</string>
+    <string name="history_active">目前對話</string>
+    <string name="history_untitled">新對話</string>
+    <string name="history_busy">正在產生回覆，請稍後再切換對話</string>
 </resources>
