@@ -90,6 +90,10 @@ internal class McpSegmentTypeAdapter : JsonSerializer<McpSegment>, JsonDeseriali
                 json.addProperty(FIELD_TYPE, TYPE_THINKING)
                 json.addProperty(FIELD_TEXT, src.text)
             }
+            is McpSegment.Text -> {
+                json.addProperty(FIELD_TYPE, TYPE_TEXT)
+                json.addProperty(FIELD_TEXT, src.text)
+            }
             is McpSegment.Calls -> {
                 json.addProperty(FIELD_TYPE, TYPE_CALLS)
                 json.add(FIELD_CALLS, context.serialize(src.calls, CALLS_LIST_TYPE))
@@ -110,6 +114,7 @@ internal class McpSegmentTypeAdapter : JsonSerializer<McpSegment>, JsonDeseriali
                 context.deserialize<List<McpCallInfo>>(obj.get(FIELD_CALLS), CALLS_LIST_TYPE)
                     ?: emptyList()
             )
+            TYPE_TEXT -> McpSegment.Text(obj.get(FIELD_TEXT)?.asString.orEmpty())
             else -> McpSegment.Thinking(obj.get(FIELD_TEXT)?.asString.orEmpty())
         }
     }
@@ -119,6 +124,7 @@ internal class McpSegmentTypeAdapter : JsonSerializer<McpSegment>, JsonDeseriali
         const val FIELD_TEXT = "text"
         const val FIELD_CALLS = "calls"
         const val TYPE_THINKING = "thinking"
+        const val TYPE_TEXT = "text"
         const val TYPE_CALLS = "calls"
         val CALLS_LIST_TYPE: Type = object : TypeToken<List<McpCallInfo>>() {}.type
     }

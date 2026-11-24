@@ -78,6 +78,19 @@ fun MessageBubble(
     var copyState by remember { mutableStateOf(CopyState.Idle) }
 
     val isUser = message.sender == Sender.USER
+
+    // 工具调用会把先前的正文写入 segments，复制时要把这些正文一并带上
+    val copyableText = remember(message) {
+        buildString {
+            message.segments.filterIsInstance<McpSegment.Text>().forEach { seg ->
+                if (seg.text.isNotBlank()) {
+                    append(seg.text)
+                    append("\n\n")
+                }
+            }
+            append(message.text)
+        }.trim()
+    }
     val bubbleColor = when {
         isEditing -> MaterialTheme.colorScheme.surfaceContainerHigh
         isUser -> MaterialTheme.colorScheme.primary
@@ -177,6 +190,13 @@ fun MessageBubble(
                         message.segments.forEach { seg ->
                             when (seg) {
                                 is McpSegment.Thinking -> ThinkingBlock(reasoningText = seg.text, isStreaming = false)
+                                is McpSegment.Text -> if (seg.text.isNotBlank()) {
+                                    hybridMarkdown(
+                                        seg.text,
+                                        Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                                        textColor
+                                    )
+                                }
                                 is McpSegment.Calls -> if (seg.calls.isNotEmpty()) McpCallsBlock(calls = seg.calls)
                             }
                         }
@@ -241,7 +261,7 @@ fun MessageBubble(
                 MessageActionIconButton(
                     onClick = {
                         scope.launch {
-                            copyToClipboard(context, message.text)
+                            copyToClipboard(context, copyableText)
                             copyState = CopyState.Copied
                             delay(2000)
                             copyState = CopyState.Idle

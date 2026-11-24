@@ -45,10 +45,12 @@ data class McpCallInfo(
 )
 
 /**
- * 消息中 MCP 相关的分段：思考块或 MCP 调用组，按发生顺序堆叠显示。
+ * 消息中的内容分段：思考块、正文或 MCP 调用组，按发生顺序堆叠显示。
+ * 正文分段用于在多次工具调用之间保留输出顺序。
  */
 @Immutable
 sealed class McpSegment {
     data class Thinking(val text: String) : McpSegment()
+    data class Text(val text: String) : McpSegment()
     data class Calls(val calls: List<McpCallInfo>) : McpSegment()
 }

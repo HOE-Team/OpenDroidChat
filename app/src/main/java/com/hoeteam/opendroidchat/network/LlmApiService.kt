@@ -369,12 +369,39 @@ class LlmApiService {
     }
 
     /**
-     * 支持 MCP 工具调用的非流式聊天。
+     * DSML 只给出工具名，有时会带上服务器前缀（如 AnySearch__extract）。
+     * 依次尝试完全匹配、后缀匹配，找到第一个暴露该工具的服务器。
+     */
+    private fun findServerForTool(
+        usableServers: List<Pair<McpServer, List<McpTool>>>,
+        toolName: String
+    ): McpServer? {
+        val bareName = toolName
+            .substringAfterLast("__")
+            .substringAfterLast("::")
+            .substringAfterLast(':')
+            .substringAfterLast('/')
+            .substringAfterLast('.')
+        return usableServers.firstOrNull { (_, tools) ->
+            tools.any { it.name == toolName || it.name == bareName }
+        }?.first
+    }
+
+    private data class ResolvedMcpCall(
+        val server: McpServer?,
+        val serverName: String,
+        val tool: String,
+        val arguments: Map<String, JsonElement>
+    )
+
+    /**
+     * 支持 MCP 工具调用的聊天。
+     *
      * 流程：
      *  1. 拉取所有已启用服务器的工具列表并注入系统提示。
-     *  2. 调用模型，解析其中形如 [MCP_CALL]{...} 的工具调用标记。
-     *  3. 若存在工具调用，则执行对应工具、记录耗时，并把结果回填给模型再次调用。
-     *  4. 循环直至模型不再请求工具调用（或达到最大迭代次数）。
+     *  2. 解析模型输出中的 [MCP_CALL] 或 DeepSeek DSML 工具调用。
+     *  3. 执行工具后，把「模型本轮的可见文本」作为 assistant、「工具结果」作为 user 回填。
+     *  4. 继续下一轮，直到模型不再请求工具调用（或达到最大迭代次数）。
      */
     suspend fun sendChatWithMcp(
         messages: List<ApiMessage>,
@@ -410,50 +437,40 @@ class LlmApiService {
             return sendChat(messages, config)
         }
 
-        toolPrompt.append("\n当需要调用上述工具时，你必须输出一行恰好包含以下内容的标记，然后停止并等待结果：\n")
+        toolPrompt.append("\n当需要调用上述工具时，必须输出工具调用标记后停止，等待工具结果：\n")
         toolPrompt.append("[MCP_CALL]{\"server\":\"<服务器名>\",\"tool\":\"<工具名>\",\"arguments\":{...}}\n")
-        toolPrompt.append("收到工具结果后，再继续回答用户的问题。\n")
+        toolPrompt.append("收到工具结果后，再基于结果继续回答用户的问题。\n")
 
         val collectedCalls = mutableListOf<McpCallInfo>()
-        var workingMessages = messages
+        val workingMessages = messages.toMutableList()
         val maxIterations = 6
+        var nudgedAfterEmptyReply = false
 
         repeat(maxIterations) {
-            // 获取本轮（可能含工具调用）的完整文本，以及供 UI 展示的思考内容
             var roundText: String
             var reasoning: String? = null
 
             if (stream && onChunk != null) {
-                // === 真·流式：每轮都用 sendChatStream 单次生成，边生成边推送 ===
+                // === 真·流式：边生成边推送，工具调用标记会被实时剔除 ===
                 val roundContent = StringBuilder()
                 var pending = StringBuilder()
                 sendChatStream(workingMessages, config, extraSystemPrompt = toolPrompt.toString())
                     .collect { chunk ->
                         if (!chunk.reasoningText.isNullOrBlank()) {
-                            reasoning = chunk.reasoningText
-                            onChunk("", chunk.reasoningText)
+                            val cleanedReasoning = ToolCallMarkup.stripMarkup(chunk.reasoningText)
+                            reasoning = cleanedReasoning
+                            onChunk("", cleanedReasoning)
                         }
                         roundContent.append(chunk.content)
                         pending.append(chunk.content)
-                        // 去掉本轮已完整的 [MCP_CALL] 标记，避免把标记显示给用户
-                        for (b in McpClient.extractMcpCallBlocks(pending.toString())) {
-                            val bi = pending.indexOf(b)
-                            if (bi >= 0) pending.delete(bi, bi + b.length)
-                        }
-                        val text = pending.toString()
-                        // 若仍存在未闭合的 [MCP_CALL]（标记可能被分块传入），则从该处起全部暂存，
-                        // 否则仅暂存可能是标记前缀的尾部，避免把 [MCP_CALL]{...} 泄漏到界面
-                        val lastMarker = text.lastIndexOf("[MCP_CALL]")
-                        val hold = if (lastMarker >= 0) text.length - lastMarker else McpClient.holdBackLength(text)
-                        val emitLen = text.length - hold
-                        if (emitLen > 0) {
-                            onChunk(text.substring(0, emitLen), null)
-                            pending = StringBuilder(text.substring(emitLen))
-                        }
+
+                        val (visible, rest) = ToolCallMarkup.splitStreaming(pending.toString())
+                        if (visible.isNotEmpty()) onChunk(visible, null)
+                        pending = StringBuilder(rest)
                     }
                 // 冲刷尾部（非标记文本）
                 if (pending.isNotBlank()) {
-                    val leftover = McpClient.stripMcpCalls(pending.toString())
+                    val leftover = ToolCallMarkup.stripMarkup(pending.toString())
                     if (leftover.isNotBlank()) onChunk(leftover, null)
                 }
                 roundText = roundContent.toString()
@@ -461,69 +478,112 @@ class LlmApiService {
                 // === 非流式：单次调用获取本轮文本 ===
                 val result = sendChat(workingMessages, config, extraSystemPrompt = toolPrompt.toString())
                 roundText = result.content
-                reasoning = result.reasoningText
+                reasoning = result.reasoningText?.let { ToolCallMarkup.stripMarkup(it) }
             }
 
-            val calls = McpClient.parseMcpCalls(roundText)
+            // 同时兼容本应用协议与 DeepSeek 的 DSML 标记
+            val calls = mutableListOf<ResolvedMcpCall>()
+            for (call in ToolCallMarkup.parseMcpCalls(roundText)) {
+                val server = usableServers.firstOrNull { it.first.name == call.server }?.first
+                calls += ResolvedMcpCall(
+                    server = server,
+                    serverName = server?.name ?: call.server,
+                    tool = call.tool,
+                    arguments = call.arguments
+                )
+            }
+            for (call in ToolCallMarkup.parseDsmlCalls(roundText)) {
+                val server = findServerForTool(usableServers, call.tool)
+                calls += ResolvedMcpCall(
+                    server = server,
+                    serverName = server?.name ?: "未知服务器",
+                    tool = call.tool,
+                    arguments = call.arguments
+                )
+            }
+
             if (calls.isEmpty()) {
-                // 最终答案
+                // 没有工具调用，本轮文本就是最终答案
+                val visible = ToolCallMarkup.stripMarkup(roundText)
+                // 模型只复述了工具结果或标记、正文为空时，再提示一次，
+                // 避免“工具调用完成后回复停住”的情况
+                if (visible.isBlank() && collectedCalls.isNotEmpty() && !nudgedAfterEmptyReply) {
+                    nudgedAfterEmptyReply = true
+                    workingMessages += ApiMessage(
+                        role = "user",
+                        content = "请直接回答用户的问题，不要复述工具返回的原始数据。"
+                    )
+                    return@repeat
+                }
                 return ChatResult(
-                    content = McpClient.stripMcpCalls(roundText),
+                    content = visible,
                     reasoningText = reasoning,
                     mcpCalls = collectedCalls
                 )
             }
 
-            // 将模型的工具调用请求追加到消息历史（用可读文本代替原始标记，避免模型再次输出 [MCP_CALL]）
-            val updatedMessages = workingMessages.toMutableList()
-            val toolNames = calls.joinToString(", ") { it.tool }
-            updatedMessages += ApiMessage(
+            // 把模型本轮的可见文本作为 assistant 消息（不伪造“等待结果”之类的话术），
+            // 工具结果放进 user 消息，避免模型把占位文案当成自己的最终回答。
+            val assistantText = ToolCallMarkup.stripMarkup(roundText)
+            workingMessages += ApiMessage(
                 role = "assistant",
-                content = "我已请求调用 MCP 工具：$toolNames，正在等待结果。"
+                // 只输出工具标记时用空格占位：保证 user/assistant 交替，
+                // 又不会像合成文案那样被模型复读
+                content = assistantText.ifBlank { " " }
             )
 
+            val resultText = StringBuilder()
             for (call in calls) {
-                val pair = usableServers.firstOrNull { it.first.name == call.server }
-                if (pair == null) {
-                    updatedMessages += ApiMessage(
-                        role = "system",
-                        content = "错误：未找到 MCP 服务器 \"${call.server}\"。"
-                    )
-                    collectedCalls += McpCallInfo(
-                        serverName = call.server,
+                onToolStart?.invoke(call.serverName, call.tool)
+                val server = call.server
+                if (server == null) {
+                    val error = "未找到提供工具 \"${call.tool}\" 的 MCP 服务器"
+                    val completed = McpCallInfo(
+                        serverName = call.serverName,
                         toolName = call.tool,
                         durationMs = 0,
-                        error = "未找到 MCP 服务器：${call.server}"
+                        error = error
                     )
+                    collectedCalls += completed
+                    onToolComplete?.invoke(completed)
+                    resultText.append("工具 \"${call.tool}\" 执行失败：${error}\n\n")
                     continue
                 }
-                val server = pair.first
-                onToolStart?.invoke(server.name, call.tool)
+
                 val startTime = System.currentTimeMillis()
                 val result = mcpClient.callTool(server, call.tool, call.arguments)
-                val error = if (result.isError) result.text else null
                 val duration = System.currentTimeMillis() - startTime
                 val completed = McpCallInfo(
                     serverName = server.name,
                     toolName = call.tool,
                     durationMs = duration,
-                    error = error
+                    error = if (result.isError) result.text else null
                 )
                 collectedCalls += completed
                 onToolComplete?.invoke(completed)
-                updatedMessages += ApiMessage(
-                    role = "system",
-                    content = "工具 \"${call.tool}\"（服务器 ${server.name}）返回结果：\n${result.text}"
-                )
+                resultText.append("工具 \"${call.tool}\"（服务器 ${server.name}）返回结果：\n${result.text}\n\n")
             }
-            workingMessages = updatedMessages
+
+            // DeepSeek 的 DSML 协议用 <tool_result> 承载结果；按这个格式回填，
+            // 模型更不容易自己伪造一份结果再停住
+            val resultPayload = if (config.provider == LlmProvider.DeepSeek) {
+                "<tool_result>\n${resultText}</tool_result>"
+            } else {
+                resultText.toString()
+            }
+            workingMessages += ApiMessage(
+                role = "user",
+                content = "你刚才请求调用 MCP 工具：${calls.joinToString("、") { it.tool }}。\n\n" +
+                    "工具执行结果如下：\n\n${resultPayload}" +
+                    "请基于以上结果继续回答用户的问题，不要重复工具调用说明，除非还需要调用其他工具。"
+            )
         }
 
         // 达到最大迭代次数仍无法收敛，返回最后一次结果
         val last = sendChat(workingMessages, config, extraSystemPrompt = toolPrompt.toString())
         return ChatResult(
-            content = McpClient.stripMcpCalls(last.content),
-            reasoningText = last.reasoningText,
+            content = ToolCallMarkup.stripMarkup(last.content),
+            reasoningText = last.reasoningText?.let { ToolCallMarkup.stripMarkup(it) },
             mcpCalls = collectedCalls
         )
     }

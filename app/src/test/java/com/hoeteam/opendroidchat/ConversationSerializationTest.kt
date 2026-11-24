@@ -94,6 +94,33 @@ class ConversationSerializationTest {
     }
 
     @Test
+    fun textSegmentSurvivesRoundTrip() {
+        val conversation = Conversation(
+            title = "工具调用顺序",
+            messages = listOf(
+                Message(
+                    text = "最终回答",
+                    sender = Sender.LLM,
+                    segments = listOf(
+                        McpSegment.Text("调用工具前的正文"),
+                        McpSegment.Calls(
+                            listOf(McpCallInfo(serverName = "s", toolName = "t", durationMs = 1))
+                        )
+                    )
+                )
+            )
+        )
+
+        val restored = gson.fromJson(gson.toJson(conversation), Conversation::class.java)
+        val segments = restored.messages.single().segments
+
+        assertEquals(2, segments.size)
+        assertTrue(segments[0] is McpSegment.Text)
+        assertEquals("调用工具前的正文", (segments[0] as McpSegment.Text).text)
+        assertTrue(segments[1] is McpSegment.Calls)
+    }
+
+    @Test
     fun summaryUsesLastRealMessageAndSkipsApiErrors() {
         val conversation = Conversation(
             title = "标题",

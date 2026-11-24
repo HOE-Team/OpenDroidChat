@@ -12,6 +12,7 @@ import com.hoeteam.opendroidchat.data.*
 import com.hoeteam.opendroidchat.network.ChatResult
 import com.hoeteam.opendroidchat.network.LlmApiService
 import com.hoeteam.opendroidchat.network.StreamChunk
+import com.hoeteam.opendroidchat.network.ToolCallMarkup
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
@@ -267,17 +268,32 @@ class ChatViewModel(
     private fun buildApiMessages(): List<ApiMessage> {
         return _messages.value
             .filter { !it.text.contains("LLM API 响应出错") }
-            .map { msg ->
-                val apiContent = if (msg.selectedFile != null) {
-                    buildUserMessageText(msg.text, msg.selectedFile)
-                } else {
-                    msg.text
+            .mapNotNull { msg ->
+                val apiContent = when {
+                    msg.selectedFile != null -> buildUserMessageText(msg.text, msg.selectedFile)
+                    msg.sender == Sender.LLM -> buildAssistantContent(msg)
+                    else -> msg.text
                 }
-                ApiMessage(
-                    role = if (msg.sender == Sender.USER) "user" else "assistant",
-                    content = apiContent
-                )
+                if (apiContent.isBlank() && msg.sender == Sender.LLM) {
+                    // 仅包含工具调用的空 assistant 消息不回传，避免部分 API 拒绝空内容
+                    null
+                } else {
+                    ApiMessage(
+                        role = if (msg.sender == Sender.USER) "user" else "assistant",
+                        content = apiContent
+                    )
+                }
             }
+    }
+
+    /** 工具调用会把正文拆进 segments，回传给 API 时需要按顺序拼回。 */
+    private fun buildAssistantContent(message: Message): String {
+        val parts = mutableListOf<String>()
+        message.segments.filterIsInstance<McpSegment.Text>().forEach {
+            if (it.text.isNotBlank()) parts += it.text
+        }
+        if (message.text.isNotBlank()) parts += message.text
+        return parts.joinToString("\n\n")
     }
 
     /**
@@ -319,7 +335,12 @@ class ChatViewModel(
                                     text = if (content.isEmpty()) m.text else m.text + content,
                                     reasoningText = reasoningText ?: m.reasoningText,
                                     isStreaming = true,
-                                    isThinkingStreaming = !reasoningText.isNullOrBlank()
+                                    // 开始输出正文时思考已经结束，避免思考块一直显示“思考中…”
+                                    isThinkingStreaming = when {
+                                        reasoningText != null -> reasoningText.isNotBlank()
+                                        content.isNotEmpty() -> false
+                                        else -> m.isThinkingStreaming
+                                    }
                                 )
                             } else m
                         }
@@ -334,6 +355,13 @@ class ChatViewModel(
                                 if (!m.reasoningText.isNullOrBlank()) {
                                     segments += McpSegment.Thinking(m.reasoningText)
                                 }
+                                // 把调用前已经输出的正文也固化到分段中，保证
+                                // 「正文 → 工具调用 → 后续正文」的显示顺序不被破坏。
+                                // 再清一次标记，避免流式阶段漏掉的工具语法残留在分段里
+                                val visibleText = ToolCallMarkup.stripMarkup(m.text)
+                                if (visibleText.isNotBlank()) {
+                                    segments += McpSegment.Text(visibleText)
+                                }
                                 val last = segments.lastOrNull()
                                 if (last is McpSegment.Calls) {
                                     segments[segments.size - 1] = McpSegment.Calls(
@@ -346,6 +374,8 @@ class ChatViewModel(
                                 }
                                 m.copy(
                                     reasoningText = null,
+                                    isThinkingStreaming = false,
+                                    text = "",
                                     segments = segments
                                 )
                             } else m
@@ -362,6 +392,7 @@ class ChatViewModel(
                                     if (replaced) seg
                                     else when (seg) {
                                         is McpSegment.Thinking -> seg
+                                        is McpSegment.Text -> seg
                                         is McpSegment.Calls -> McpSegment.Calls(seg.calls.map { call ->
                                             if (!replaced && call.pending) {
                                                 replaced = true
@@ -386,6 +417,7 @@ class ChatViewModel(
                         val finalizedSegments = m.segments.map { seg ->
                             when (seg) {
                                 is McpSegment.Thinking -> seg
+                                is McpSegment.Text -> seg
                                 is McpSegment.Calls -> McpSegment.Calls(seg.calls.map { call ->
                                     if (call.pending && callIdx < finalCalls.size) {
                                         val f = finalCalls[callIdx]
@@ -395,8 +427,18 @@ class ChatViewModel(
                                 })
                             }
                         }
+                        val finalText = ToolCallMarkup.stripMarkup(
+                            result.content.ifBlank { m.text }
+                        )
                         m.copy(
-                            text = result.content,
+                            // 工具执行完但模型没有返回文本时给出明确提示，避免“回复停住”
+                            text = finalText.ifBlank {
+                                if (finalizedSegments.any { it is McpSegment.Calls }) {
+                                    "（工具调用已完成，但模型没有返回内容，可尝试重新生成）"
+                                } else {
+                                    ""
+                                }
+                            },
                             reasoningText = result.reasoningText,
                             isStreaming = false,
                             isThinkingStreaming = false,
