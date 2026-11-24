@@ -18,7 +18,7 @@ android {
         minSdk = 23
         targetSdk = 36
         versionCode = 26
-        versionName = "Stable-1.14-ChatHistory"
+        versionName = "Stable-1.15-ChatHistory"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }

@@ -11,6 +11,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontFamily
@@ -27,51 +28,13 @@ fun HybridMarkdown(
     val codeBackground = if (isDark) Color(0xFF1E1E1E) else Color(0xFFF5F5F5)
     val codeTextColor = if (isDark) Color(0xFFCE9178) else Color(0xFFB00020)
 
+    // 只在文本变化时重新切分：流式刷新时同一段内容往往会被重复组合多次
+    val segments = remember(text) { splitMarkdownSegments(text) }
+
     Column(modifier = modifier) {
-        var insideCodeBlock = false
-        val normalBuffer = mutableListOf<String>()
-        val lines = text.lines()
-
-        lines.forEach { line ->
-            if (line.trim().startsWith("```")) {
-                if (insideCodeBlock) {
-                    Surface(
-                        color = codeBackground,
-                        shape = RoundedCornerShape(6.dp),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 2.dp)
-                    ) {
-                        Text(
-                            text = normalBuffer.joinToString("\n"),
-                            fontFamily = FontFamily.Monospace,
-                            color = codeTextColor,
-                            modifier = Modifier.padding(8.dp)
-                        )
-                    }
-                    normalBuffer.clear()
-                } else {
-                    if (normalBuffer.isNotEmpty()) {
-                        val content = normalBuffer.joinToString("\n")
-                        themedMarkdownText(
-                            content,
-                            Modifier.fillMaxWidth(),
-                            normalTextColor,
-                            codeBackground,
-                            codeTextColor
-                        )
-                        normalBuffer.clear()
-                    }
-                }
-                insideCodeBlock = !insideCodeBlock
-            } else {
-                normalBuffer.add(line)
-            }
-        }
-
-        if (normalBuffer.isNotEmpty()) {
-            if (insideCodeBlock) {
-                Surface(
+        segments.forEach { segment ->
+            when (segment) {
+                is MarkdownSegment.Code -> Surface(
                     color = codeBackground,
                     shape = RoundedCornerShape(6.dp),
                     modifier = Modifier
@@ -79,20 +42,22 @@ fun HybridMarkdown(
                         .padding(vertical = 2.dp)
                 ) {
                     Text(
-                        text = normalBuffer.joinToString("\n"),
+                        text = segment.text,
                         fontFamily = FontFamily.Monospace,
                         color = codeTextColor,
                         modifier = Modifier.padding(8.dp)
                     )
                 }
-            } else {
-                themedMarkdownText(
-                    normalBuffer.joinToString("\n"),
-                    Modifier.fillMaxWidth(),
-                    normalTextColor,
-                    codeBackground,
-                    codeTextColor
-                )
+
+                is MarkdownSegment.Markdown -> if (segment.text.isNotBlank()) {
+                    themedMarkdownText(
+                        segment.text,
+                        Modifier.fillMaxWidth(),
+                        normalTextColor,
+                        codeBackground,
+                        codeTextColor
+                    )
+                }
             }
         }
     }

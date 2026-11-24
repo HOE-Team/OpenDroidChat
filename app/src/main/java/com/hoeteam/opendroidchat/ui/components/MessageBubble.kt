@@ -60,10 +60,16 @@ private fun copyToClipboard(context: Context, text: String) {
     Toast.makeText(context, context.getString(com.hoeteam.opendroidchat.R.string.message_copied_to_clipboard), Toast.LENGTH_SHORT).show()
 }
 
+/**
+ * 渲染一条消息。
+ *
+ * 之前通过参数传入 Markdown 渲染 lambda，导致列表项无法被 Compose 跳过，
+ * 每次流式刷新所有可见气泡都会整体重组；现在改为内部实现，
+ * 稳定性由参数类型保证，未变化的消息可直接跳过重组。
+ */
 @Composable
 fun MessageBubble(
     message: Message,
-    hybridMarkdown: @Composable (String, Modifier, Color) -> Unit,
     isEditing: Boolean = false,
     editingText: String = "",
     onEditTextChange: (String) -> Unit = {},
@@ -79,8 +85,8 @@ fun MessageBubble(
 
     val isUser = message.sender == Sender.USER
 
-    // 工具调用会把先前的正文写入 segments，复制时要把这些正文一并带上
-    val copyableText = remember(message) {
+    // 只依赖文本本身，流式刷新时不会因为其他字段变化而重复拼接
+    val copyableText = remember(message.text, message.segments) {
         buildString {
             message.segments.filterIsInstance<McpSegment.Text>().forEach { seg ->
                 if (seg.text.isNotBlank()) {
@@ -191,10 +197,10 @@ fun MessageBubble(
                             when (seg) {
                                 is McpSegment.Thinking -> ThinkingBlock(reasoningText = seg.text, isStreaming = false)
                                 is McpSegment.Text -> if (seg.text.isNotBlank()) {
-                                    hybridMarkdown(
-                                        seg.text,
-                                        Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-                                        textColor
+                                    MessageMarkdown(
+                                        text = seg.text,
+                                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                                        textColor = textColor
                                     )
                                 }
                                 is McpSegment.Calls -> if (seg.calls.isNotEmpty()) McpCallsBlock(calls = seg.calls)
@@ -212,13 +218,13 @@ fun MessageBubble(
 
                         // 常规内容
                         if (message.text.isNotBlank()) {
-                            hybridMarkdown(
-                                message.text,
-                                Modifier.padding(
+                            MessageMarkdown(
+                                text = message.text,
+                                modifier = Modifier.padding(
                                     horizontal = 16.dp,
                                     vertical = if (message.reasoningText.isNullOrBlank()) 12.dp else 8.dp
                                 ),
-                                textColor
+                                textColor = textColor
                             )
                         }
                     }
@@ -312,6 +318,29 @@ private fun MessageActionIconButton(
             icon()
         }
     }
+}
+
+/** 消息正文的 Markdown 渲染（含代码块高亮样式）。 */
+@Composable
+private fun MessageMarkdown(
+    text: String,
+    modifier: Modifier,
+    textColor: Color
+) {
+    HybridMarkdown(
+        text = text,
+        modifier = modifier,
+        normalTextColor = textColor,
+        themedMarkdownText = { md, mod, txtColor, codeBg, codeTxtColor ->
+            ThemedMarkdownText(
+                markdown = md,
+                modifier = mod,
+                textColor = txtColor,
+                codeBackgroundColor = codeBg,
+                codeTextColor = codeTxtColor
+            )
+        }
+    )
 }
 
 @Composable

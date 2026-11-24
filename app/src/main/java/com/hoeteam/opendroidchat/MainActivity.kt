@@ -76,6 +76,8 @@ import com.hoeteam.opendroidchat.viewmodel.ChatViewModelFactory
 import com.hoeteam.opendroidchat.viewmodel.ThemeViewModel
 import com.hoeteam.opendroidchat.viewmodel.ThemeViewModelFactory
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
@@ -166,8 +168,10 @@ class MainActivity : AppCompatActivity() {
             // 启动时异步检查更新（使用 LaunchedEffect 在组合内安全启动协程）
             LaunchedEffect(Unit) {
                 try {
-                    // 先读取自动更新检查开关（使用 first() 获取一次值）
-                    val settingsRepo = SettingsRepository(this@MainActivity)
+                    // 更新检查会访问网络，且只影响一个弹窗：
+                    // 放到后台并且延后执行，避免和应用启动、首屏渲染抢主线程
+                    delay(3_000)
+                    val settingsRepo = SettingsRepository.get(this@MainActivity)
                     val autoCheckEnabled = withContext(Dispatchers.IO) {
                         settingsRepo.autoUpdateCheckFlow.first()
                     }
@@ -197,7 +201,7 @@ class MainActivity : AppCompatActivity() {
     private fun applySavedLanguageSync() {
         try {
             val languageCode = runBlocking(Dispatchers.IO) {
-                val settingsRepo = SettingsRepository(this@MainActivity)
+                val settingsRepo = SettingsRepository.get(this@MainActivity)
                 settingsRepo.appLanguageFlow.first()
             }
             applyLanguage(languageCode)
@@ -212,7 +216,7 @@ class MainActivity : AppCompatActivity() {
     private fun applySavedLanguage() {
         lifecycleScope.launch(Dispatchers.IO) {
             try {
-                val settingsRepo = SettingsRepository(this@MainActivity)
+                val settingsRepo = SettingsRepository.get(this@MainActivity)
                 val languageCode = settingsRepo.appLanguageFlow.first()
                 applyLanguage(languageCode)
             } catch (_: Exception) {
@@ -243,12 +247,10 @@ class MainActivity : AppCompatActivity() {
         // 使用 lifecycleScope 在后台协程触发 DataStore 读取，提前将数据缓存到内存
         lifecycleScope.launch(kotlinx.coroutines.Dispatchers.IO) {
             try {
-                // 只读取一次 DataStore 数据，触发 DataStore 完成反序列化
-                // 使用 kotlinx.coroutines.flow.first() 来只取第一个发射的值
-                applicationContext.dataStore.data.collect { 
-                    // 读取到一次数据后就停止，预热完成
-                    return@collect
-                }
+                // 只读取一次 DataStore 数据，触发 DataStore 完成反序列化。
+                // 注意必须用 first()：collect{} + return@collect 会永久订阅，
+                // 之后每次写入都会把整份设置重新读一遍
+                applicationContext.dataStore.data.first()
             } catch (_: Exception) {
                 // 预读取失败不影响主流程，UI 层会正常读取
             }
@@ -280,18 +282,25 @@ fun MainNavigation(themeViewModel: ThemeViewModel) {
     val viewModel: ChatViewModel = viewModel(factory = ChatViewModelFactory(context))
 
     // 首次启动的法律条款同意状态
-    val settingsRepository = remember { SettingsRepository(context) }
+    val settingsRepository = remember { SettingsRepository.get(context) }
     // 初始为 null，等 DataStore 首次读取后再决定是否弹窗，避免老用户看到闪一下的弹窗
     val legalAccepted by produceState<Boolean?>(initialValue = null) {
         settingsRepository.legalAcceptedFlow.collect { value = it }
     }
     var legalViewed by rememberSaveable { mutableStateOf(false) }
 
-    // 历史对话抽屉：与聊天页共享同一个 ViewModel，可直接切换会话
-    val conversations by viewModel.conversations.collectAsState()
+    // 历史对话抽屉：只在抽屉打开时才订阅会话列表。
+    // 之前无条件 collectAsState()，任何一次会话保存都会让整个导航根节点重组，
+    // 正在流式输出的聊天页也被牵连，这是全局卡顿的重要来源之一。
+    val drawerState = rememberDrawerState(DrawerValue.Closed)
+    // 抽屉关闭时用一个常量空列表，完全不订阅会话 Flow
+    val emptyConversations = remember { emptyList<com.hoeteam.opendroidchat.data.ConversationSummary>() }
+    val conversationsFlow = remember(drawerState.isOpen, viewModel) {
+        if (drawerState.isOpen) viewModel.conversations else flowOf(emptyConversations)
+    }
+    val conversations by conversationsFlow.collectAsState(initial = emptyConversations)
     val activeConversationId by viewModel.activeConversationId.collectAsState()
     val isGenerating by viewModel.isLoading.collectAsState()
-    val drawerState = rememberDrawerState(DrawerValue.Closed)
     val scope = rememberCoroutineScope()
 
     val screens = listOf(

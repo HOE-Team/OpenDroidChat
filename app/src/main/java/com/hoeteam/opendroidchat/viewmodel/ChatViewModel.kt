@@ -37,21 +37,24 @@ class ChatViewModel(
     // 使用 Eagerly 策略让数据在 ViewModel 创建时立即开始加载，
     // 避免导航切换时因 WhileSubscribed 超时导致重新加载和解密
 
+    // WhileSubscribed：没有界面订阅时停止下游收集。
+    // 用 Eagerly 的话，后台标签页（例如设置页或应用在后台）也会跟着
+    // DataStore 的每次写入重新发数据、重组界面，造成全局卡顿。
     val currentModel: StateFlow<LlmModel?> = settingsRepository.currentModelFlow.stateIn(
         scope = viewModelScope,
-        started = SharingStarted.Eagerly,
+        started = SharingStarted.WhileSubscribed(5_000),
         initialValue = null
     )
 
     val allModels: StateFlow<List<LlmModel>> = settingsRepository.allModelsFlow.stateIn(
         scope = viewModelScope,
-        started = SharingStarted.Eagerly,
+        started = SharingStarted.WhileSubscribed(5_000),
         initialValue = emptyList()
     )
 
     val mcpServers: StateFlow<List<McpServer>> = settingsRepository.mcpServersFlow.stateIn(
         scope = viewModelScope,
-        started = SharingStarted.Eagerly,
+        started = SharingStarted.WhileSubscribed(5_000),
         initialValue = emptyList()
     )
 
@@ -63,6 +66,15 @@ class ChatViewModel(
 
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
+
+    /**
+     * 是否已开始输出正文。
+     *
+     * 思考阶段输入框保持可用（此前思考期间无法操作，观感上就像卡住了），
+     * 一旦出现正文就要禁用输入/发送，避免重复提交。
+     */
+    private val _isResponding = MutableStateFlow(false)
+    val isResponding: StateFlow<Boolean> = _isResponding.asStateFlow()
 
     // 错误状态：携带重试所需数据
     private val _errorState = MutableSharedFlow<ApiErrorState>()
@@ -163,6 +175,7 @@ class ChatViewModel(
         _editingMessageId.value = null
         _editingText.value = ""
         _isLoading.value = true
+        _isResponding.value = false
         // 截断后的对话已经是新的历史版本，先保存再请求
         persistActiveConversation()
 
@@ -190,6 +203,7 @@ class ChatViewModel(
         // 移除该 AI 消息及其后所有消息，保留其前内容
         _messages.update { list -> list.subList(0, idx) }
         _isLoading.value = true
+        _isResponding.value = false
         persistActiveConversation()
 
         viewModelScope.launch {
@@ -221,12 +235,14 @@ class ChatViewModel(
         }
 
         _isLoading.value = true
+        _isResponding.value = false
         viewModelScope.launch {
             executeChatRequest(currentModel, cachedMessages)
         }
     }
 
     fun sendMessage() {
+        _isResponding.value = false
         val currentModel = currentModel.value
         val currentText = _inputText.value.trim()
         val currentFile = _selectedFile.value
@@ -321,29 +337,25 @@ class ChatViewModel(
         val msgId = nextMessageId()
 
         // 先插入占位消息：流式模式用于打字机效果；同时用于展示 MCP 调用容器（含加载转圈）
-        _messages.update { it + Message(id = msgId, text = "", sender = Sender.LLM, isStreaming = useStream) }
+        appendMessage(Message(id = msgId, text = "", sender = Sender.LLM, isStreaming = useStream))
 
         try {
             val result = apiService.sendChatWithMcp(
                 apiMessages, currentModel, mcpServers,
                 stream = useStream,
                 onChunk = { content: String, reasoningText: String? ->
-                    _messages.update { list ->
-                        list.map { m ->
-                            if (m.id == msgId) {
-                                m.copy(
-                                    text = if (content.isEmpty()) m.text else m.text + content,
-                                    reasoningText = reasoningText ?: m.reasoningText,
-                                    isStreaming = true,
-                                    // 开始输出正文时思考已经结束，避免思考块一直显示“思考中…”
-                                    isThinkingStreaming = when {
-                                        reasoningText != null -> reasoningText.isNotBlank()
-                                        content.isNotEmpty() -> false
-                                        else -> m.isThinkingStreaming
-                                    }
-                                )
-                            } else m
-                        }
+                    updateMessageById(msgId) { m ->
+                        m.copy(
+                            text = if (content.isEmpty()) m.text else m.text + content,
+                            reasoningText = reasoningText ?: m.reasoningText,
+                            isStreaming = true,
+                            // 开始输出正文时思考已经结束，避免思考块一直显示“思考中…”
+                            isThinkingStreaming = when {
+                                reasoningText != null -> reasoningText.isNotBlank()
+                                content.isNotEmpty() -> false
+                                else -> m.isThinkingStreaming
+                            }
+                        )
                     }
                 },
                 onToolStart = { serverName: String, toolName: String ->
@@ -384,33 +396,28 @@ class ChatViewModel(
                 },
                 onToolComplete = { completed: McpCallInfo ->
                     // 工具调用完成：将"进行中"的调用替换为完成状态（立即显示）
-                    _messages.update { list ->
-                        list.map { m ->
-                            if (m.id == msgId) {
-                                var replaced = false
-                                val newSegments = m.segments.map { seg ->
-                                    if (replaced) seg
-                                    else when (seg) {
-                                        is McpSegment.Thinking -> seg
-                                        is McpSegment.Text -> seg
-                                        is McpSegment.Calls -> McpSegment.Calls(seg.calls.map { call ->
-                                            if (!replaced && call.pending) {
-                                                replaced = true
-                                                completed
-                                            } else call
-                                        })
-                                    }
-                                }
-                                m.copy(segments = newSegments)
-                            } else m
+                    updateMessageById(msgId) { m ->
+                        var replaced = false
+                        val newSegments = m.segments.map { seg ->
+                            if (replaced) seg
+                            else when (seg) {
+                                is McpSegment.Thinking -> seg
+                                is McpSegment.Text -> seg
+                                is McpSegment.Calls -> McpSegment.Calls(seg.calls.map { call ->
+                                    if (!replaced && call.pending) {
+                                        replaced = true
+                                        completed
+                                    } else call
+                                })
+                            }
                         }
+                        m.copy(segments = newSegments)
                     }
                 },
             )
             // 最终化消息
-            _messages.update { list ->
-                list.map { m ->
-                    if (m.id == msgId) {
+            updateMessageById(msgId) { m ->
+                    run {
                         // 用最终结果替换"进行中"的调用信息，保留分段顺序
                         val finalCalls = result.mcpCalls
                         var callIdx = 0
@@ -444,15 +451,12 @@ class ChatViewModel(
                             isThinkingStreaming = false,
                             segments = finalizedSegments
                         )
-                    } else m
-                }
+                    }
             }
         } catch (e: Exception) {
             val errorMessage = "LLM API 响应出错: ${e.message ?: "未知错误"}"
-            _messages.update { list ->
-                list.map { m ->
-                    if (m.id == msgId) m.copy(text = errorMessage, isStreaming = false, isThinkingStreaming = false) else m
-                }
+            updateMessageById(msgId) {
+                it.copy(text = errorMessage, isStreaming = false, isThinkingStreaming = false)
             }
             _errorState.emit(ApiErrorState("API 调用失败：${e.localizedMessage}", apiMessages))
         } finally {
@@ -470,16 +474,20 @@ class ChatViewModel(
             sender = Sender.LLM,
             isStreaming = true
         )
-        _messages.update { it + initialLlmMessage }
+        appendMessage(initialLlmMessage)
 
-        var fullResponseText = ""
+        // 不在这里累积全文：每次都用增量追加到消息里，避免长回答时反复复制整段文本
         var fullReasoningText = ""
         var isThinkingStreaming = false
         val shouldIgnoreThinking = !currentModel.enableThinking
         var hasError = false
 
         try {
-            apiService.sendChatStream(apiMessages, currentModel)
+            apiService.sendChatStream(
+                apiMessages,
+                currentModel,
+                throttleMillis = LlmApiService.STREAM_THROTTLE_MS
+            )
                 .catch { e ->
                     hasError = true
                     val errorMessage = "LLM API 响应出错: ${e.message ?: "未知错误"}"
@@ -490,41 +498,32 @@ class ChatViewModel(
                 .collect { chunk ->
                     if (hasError) return@collect
 
-                    if (fullResponseText.isEmpty() && chunk.reasoningText == null) {
+                    if (chunk.content.isNotEmpty()) {
+                        // 首个正文到达：结束思考态并锁定输入框，避免重复发送
                         _isLoading.value = false
+                        _isResponding.value = true
                     }
 
-                    if (shouldIgnoreThinking) {
-                        if (chunk.content.isNotEmpty()) {
-                            fullResponseText += chunk.content
-                        }
-                        updateMessageWithReasoning(
-                            llmMessageId, fullResponseText, null,
-                            isStreaming = true, isThinkingStreaming = false
-                        )
-                    } else {
-                        if (chunk.reasoningText != null) {
-                            fullReasoningText = chunk.reasoningText
-                            if (!isThinkingStreaming) isThinkingStreaming = true
-                        }
-                        if (chunk.content.isNotEmpty()) {
-                            fullResponseText += chunk.content
-                            isThinkingStreaming = false
-                        }
-                        updateMessageWithReasoning(
-                            llmMessageId, fullResponseText,
-                            fullReasoningText.ifEmpty { null },
-                            isStreaming = true, isThinkingStreaming = isThinkingStreaming
-                        )
+                    if (!shouldIgnoreThinking && chunk.reasoningText != null) {
+                        fullReasoningText = chunk.reasoningText
+                        isThinkingStreaming = chunk.reasoningText.isNotBlank()
                     }
+                    if (chunk.content.isNotEmpty()) {
+                        isThinkingStreaming = false
+                    }
+
+                    appendMessageChunk(
+                        id = llmMessageId,
+                        content = chunk.content,
+                        reasoningText = if (shouldIgnoreThinking) null else fullReasoningText.ifEmpty { null },
+                        isThinkingStreaming = isThinkingStreaming
+                    )
                 }
 
             if (!hasError) {
-                updateMessageWithReasoning(
-                    llmMessageId, fullResponseText,
-                    if (shouldIgnoreThinking) null else fullReasoningText.ifEmpty { null },
-                    isStreaming = false, isThinkingStreaming = false
-                )
+                updateMessageById(llmMessageId) { m ->
+                    m.copy(isStreaming = false, isThinkingStreaming = false)
+                }
             }
         } catch (e: Exception) {
             if (!hasError) {
@@ -534,6 +533,7 @@ class ChatViewModel(
             }
         } finally {
             _isLoading.value = false
+            _isResponding.value = false
             persistActiveConversation()
         }
     }
@@ -547,14 +547,15 @@ class ChatViewModel(
                 sender = Sender.LLM,
                 reasoningText = result.reasoningText
             )
-            _messages.update { it + llmMessage }
+            appendMessage(llmMessage)
         } catch (e: Exception) {
             val errorMessage = "LLM API 响应出错: ${e.message ?: "未知错误"}"
             val errorMsgForUi = Message(id = nextMessageId(), text = errorMessage, sender = Sender.LLM)
-            _messages.update { it + errorMsgForUi }
+            appendMessage(errorMsgForUi)
             _errorState.emit(ApiErrorState("API 调用失败：${e.localizedMessage}", apiMessages))
         } finally {
             _isLoading.value = false
+            _isResponding.value = false
             persistActiveConversation()
         }
     }
@@ -569,28 +570,47 @@ class ChatViewModel(
         return fileInfo
     }
 
+    // 更新单条消息：直接定位索引后复制该条，避免每条 chunk 都重建整张列表
     private fun updateMessageText(id: Long, newText: String, isStreaming: Boolean) {
-        _messages.update { list ->
-            list.map { msg ->
-                if (msg.id == id) msg.copy(text = newText, isStreaming = isStreaming) else msg
-            }
+        updateMessageById(id) { it.copy(text = newText, isStreaming = isStreaming) }
+    }
+
+    /** 追加一条消息：复制原列表后 add，避免 update{} 的整表映射 */
+    private fun appendMessage(message: Message) {
+        val updated = _messages.value.toMutableList()
+        updated += message
+        _messages.value = updated
+    }
+
+    /**
+     * 流式增量追加。
+     *
+     * 旧实现每个 chunk 都把累积全文拼成新字符串传入，长回答时会产生
+     * O(n²) 的拷贝；这里只在消息尾部追加新增内容，最后再传 null 做收尾。
+     */
+    private fun appendMessageChunk(
+        id: Long,
+        content: String,
+        reasoningText: String?,
+        isThinkingStreaming: Boolean
+    ) {
+        updateMessageById(id) { message ->
+            message.copy(
+                text = if (content.isEmpty()) message.text else message.text + content,
+                reasoningText = reasoningText ?: message.reasoningText,
+                isStreaming = true,
+                isThinkingStreaming = isThinkingStreaming
+            )
         }
     }
 
-    private fun updateMessageWithReasoning(
-        id: Long, newText: String, reasoningText: String?,
-        isStreaming: Boolean, isThinkingStreaming: Boolean = false
-    ) {
-        _messages.update { list ->
-            list.map { msg ->
-                if (msg.id == id) {
-                    msg.copy(
-                        text = newText, reasoningText = reasoningText,
-                        isStreaming = isStreaming, isThinkingStreaming = isThinkingStreaming
-                    )
-                } else msg
-            }
-        }
+    private inline fun updateMessageById(id: Long, transform: (Message) -> Message) {
+        val list = _messages.value
+        val index = list.indexOfFirst { it.id == id }
+        if (index < 0) return
+        val updated = list.toMutableList()
+        updated[index] = transform(updated[index])
+        _messages.value = updated
     }
 
     /**
@@ -680,6 +700,8 @@ class ChatViewModel(
      * isStreaming 标记，避免重新打开历史对话时一直显示打字机状态。
      */
     private fun persistActiveConversation() {
+        // 流式输出期间每几帧都会触发一次保存的话，会把主线程拖垮；只保存稳定状态
+        if (_messages.value.any { it.isStreaming || it.isThinkingStreaming }) return
         val snapshot = _messages.value
             .filter {
                 it.text.isNotBlank() ||
@@ -708,8 +730,13 @@ class ChatViewModel(
 
         viewModelScope.launch {
             persistenceMutex.withLock {
+                // 会话正文落盘是纯文件操作；但 activeConversationId 写的是 DataStore，
+                // 而 DataStore 每次写入都会让 settings 里所有 Flow 重新发一份数据
+                //（模型列表会被反序列化、MCP 列表会被重新解密）。只有 id 真的变了才写
                 conversationRepository.save(conversation)
-                settingsRepository.setActiveConversationId(conversation.id)
+                if (settingsRepository.activeConversationIdFlow.first() != conversation.id) {
+                    settingsRepository.setActiveConversationId(conversation.id)
+                }
             }
         }
     }
@@ -837,7 +864,7 @@ class ChatViewModel(
 class ChatViewModelFactory(private val context: Context) : androidx.lifecycle.ViewModelProvider.Factory {
     override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(ChatViewModel::class.java)) {
-            val settingsRepository = SettingsRepository(context)
+            val settingsRepository = SettingsRepository.get(context)
             val conversationRepository = ConversationRepository(context)
             val apiService = LlmApiService()
             @Suppress("UNCHECKED_CAST")

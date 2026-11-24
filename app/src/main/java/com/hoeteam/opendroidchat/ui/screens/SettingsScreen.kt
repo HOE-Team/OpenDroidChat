@@ -58,7 +58,7 @@ fun SettingsScreen(
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val updateManager = remember { UpdateManager(context) }
-    val settingsRepository = remember { SettingsRepository(context) }
+    val settingsRepository = remember { SettingsRepository.get(context) }
     val currentVersionType by remember { mutableStateOf(updateManager.getCurrentVersionType()) }
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
 

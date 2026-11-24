@@ -58,7 +58,13 @@ fun ThemedMarkdownText(
         },
         update = { textView ->
             textView.setTextColor(textColorArgb)
-            markwon.setMarkdown(textView, markdown)
+            // 内容未变化时跳过重新解析 Markdown：
+            // 流式刷新会让 update 频繁触发，重复解析整段文本是卡顿的主要来源
+            val cached = textView.tag as? String
+            if (cached != markdown) {
+                markwon.setMarkdown(textView, markdown)
+                textView.tag = markdown
+            }
         }
     )
 }

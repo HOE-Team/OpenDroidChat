@@ -58,6 +58,7 @@ fun ChatScreen(
     val messages by viewModel.messages.collectAsState()
     val inputText by viewModel.inputText.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
+    val isResponding by viewModel.isResponding.collectAsState()
     val selectedFile by viewModel.selectedFile.collectAsState()
     val editingMessageId by viewModel.editingMessageId.collectAsState()
     val editingText by viewModel.editingText.collectAsState()
@@ -115,7 +116,12 @@ fun ChatScreen(
         }
     }
 
-    LaunchedEffect(messages, isLoading) {
+    // 流式输出时按约 120ms 合并自动滚动，避免每个 token 都触发一次列表定位
+    val streamingAnchor = remember(messages) {
+        val last = messages.lastOrNull()
+        if (last?.isStreaming == true) last.text.length / 12 else -1
+    }
+    LaunchedEffect(messages.size, isLoading, streamingAnchor) {
         if (isDragged) return@LaunchedEffect
         if (messages.isNotEmpty() && isAtBottom) {
             val lastIndex = if (isLoading) messages.size else messages.size - 1
@@ -231,7 +237,8 @@ fun ChatScreen(
                     text = inputText,
                     onTextChange = viewModel::updateInputText,
                     onSend = viewModel::sendMessage,
-                    isLoading = isLoading,
+                    // 思考阶段输入框保持可用，只有正文开始输出后才锁定
+                    isLoading = isResponding,
                     selectedFile = selectedFile,
                     onAddFile = {
                         val intent = createFilePickerIntent()
@@ -302,7 +309,7 @@ fun ChatScreen(
                         text = inputText,
                         onTextChange = viewModel::updateInputText,
                         onSend = viewModel::sendMessage,
-                        isLoading = isLoading,
+                        isLoading = isResponding,
                         selectedFile = selectedFile,
                         onAddFile = {
                             val intent = createFilePickerIntent()
@@ -318,7 +325,7 @@ fun ChatScreen(
                     verticalArrangement = Arrangement.spacedBy(12.dp), // 加大间距梯度
                     state = lazyListState
                 ) {
-                items(messages, key = { it.id }) { message ->
+                items(messages, key = { it.id }, contentType = { "message" }) { message ->
                     MessageBubble(
                         message = message,
                         isEditing = editingMessageId == message.id,
@@ -328,24 +335,7 @@ fun ChatScreen(
                         onCancelEdit = viewModel::cancelEditing,
                         onEdit = { viewModel.startEditing(message.id) },
                         onRegenerate = { viewModel.regenerateMessage(message.id) },
-                        isLoading = isLoading,
-                        hybridMarkdown = { text, modifier, textColor ->
-                            HybridMarkdown(
-                                text = text,
-                                modifier = modifier,
-                                normalTextColor = textColor,
-                                themedMarkdownText = { md, mod, txtColor, codeBg, codeTxtColor ->
-                                    // 修正：显式使用命名参数以避开中间的可选参数 style
-                                    ThemedMarkdownText(
-                                        markdown = md,
-                                        modifier = mod,
-                                        textColor = txtColor,
-                                        codeBackgroundColor = codeBg,
-                                        codeTextColor = codeTxtColor
-                                    )
-                                }
-                            )
-                        }
+                        isLoading = isLoading
                     )
                 }
                 if (isLoading) {

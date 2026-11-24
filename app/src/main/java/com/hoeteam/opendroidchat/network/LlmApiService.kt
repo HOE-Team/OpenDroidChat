@@ -28,6 +28,11 @@ import kotlinx.serialization.json.*
  * 不再维护 Claude/Gemini 的原生协议分支。
  */
 class LlmApiService {
+    companion object {
+        /** 流式增量合并窗口：约 60ms 刷新一次，约合 16 帧，肉眼仍是逐字效果。 */
+        const val STREAM_THROTTLE_MS = 60L
+    }
+
     private val json = Json {
         ignoreUnknownKeys = true
         prettyPrint = false
@@ -105,11 +110,19 @@ class LlmApiService {
 
     // ---------------------------- 流式传输 ----------------------------
 
+    /**
+     * 流式发送聊天请求。
+     *
+     * [throttleMillis] 用于合并高频增量：上游一个 token 一个 chunk，
+     * 若逐条刷新 UI 会持续触发 Markdown 重排导致卡顿，这里按时间窗口合并，
+     * 只把累计后的新增文本推给上层。
+     */
     fun sendChatStream(
         messages: List<ApiMessage>,
         config: LlmModel,
         extraSystemPrompt: String = "",
-        tools: List<ToolDefinition>? = null
+        tools: List<ToolDefinition>? = null,
+        throttleMillis: Long = 0L
     ): Flow<StreamChunk> = flow {
         val apiUrl = resolveApiUrl(config)
         val apiKey = config.apiKey
@@ -135,7 +148,27 @@ class LlmApiService {
 
             val channel = response.bodyAsChannel()
             var reasoningBuffer = ""
+            // 与上次推送的内容比较长度，只推送新增部分
+            var emittedReasoningLength = 0
+            var emittedContentLength = 0
+            val contentBuffer = StringBuilder()
             val toolCallAccumulators = sortedMapOf<Int, ToolCallAccumulator>()
+            var lastFlushAt = 0L
+
+            suspend fun flush(force: Boolean) {
+                val now = System.currentTimeMillis()
+                if (!force && now - lastFlushAt < throttleMillis) return
+                lastFlushAt = now
+
+                if (reasoningBuffer.length > emittedReasoningLength) {
+                    emit(StreamChunk(reasoningText = reasoningBuffer))
+                    emittedReasoningLength = reasoningBuffer.length
+                }
+                if (contentBuffer.length > emittedContentLength) {
+                    emit(StreamChunk(content = contentBuffer.substring(emittedContentLength)))
+                    emittedContentLength = contentBuffer.length
+                }
+            }
 
             while (!channel.isClosedForRead) {
                 val line = channel.readUTF8Line() ?: continue
@@ -153,21 +186,23 @@ class LlmApiService {
                 val choice = chatResp.choices.firstOrNull() ?: continue
                 val delta = choice.delta
 
-                if (!delta?.reasoning_content.isNullOrEmpty()) {
-                    reasoningBuffer += delta?.reasoning_content.orEmpty()
-                    emit(StreamChunk(reasoningText = reasoningBuffer))
+                delta?.reasoning_content?.takeIf { it.isNotEmpty() }?.let {
+                    reasoningBuffer += it
                 }
-
                 delta?.content?.takeIf { it.isNotEmpty() }?.let {
-                    emit(StreamChunk(content = it))
+                    contentBuffer.append(it)
                 }
-
                 delta?.tool_calls?.forEach { toolDelta ->
                     toolCallAccumulators
                         .getOrPut(toolDelta.index) { ToolCallAccumulator() }
                         .append(toolDelta)
                 }
+
+                flush(force = false)
             }
+
+            // 冲刷剩余内容，保证最后几个字不丢
+            flush(force = true)
 
             if (toolCallAccumulators.isNotEmpty()) {
                 emit(
@@ -434,7 +469,8 @@ class LlmApiService {
                     messages = workingMessages,
                     config = config,
                     extraSystemPrompt = toolHint,
-                    tools = toolDefinitions
+                    tools = toolDefinitions,
+                    throttleMillis = STREAM_THROTTLE_MS
                 ).collect { chunk ->
                     chunk.toolCalls?.let { nativeToolCalls = it }
                     if (!chunk.reasoningText.isNullOrBlank()) {

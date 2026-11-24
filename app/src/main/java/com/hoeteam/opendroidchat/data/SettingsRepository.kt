@@ -16,6 +16,7 @@ import com.google.gson.reflect.TypeToken
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
@@ -24,7 +25,35 @@ import androidx.datastore.preferences.core.booleanPreferencesKey
 // DataStore 实例 (在 Context 扩展属性中定义)
 val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "settings")
 
-class SettingsRepository(private val context: Context) {
+/**
+ * 设置仓库的进程级单例。
+ *
+ * DataStore 本身是单例，但每次 new SettingsRepository 都会新建
+ * KeyStoreEncryptionUtil（读取 Android Keystore 很慢），并且各自持有一份
+ * JSON 缓存。MainActivity、各个 ViewModel、设置页过去都各自 new 一份，
+ * 冷启动时会重复初始化解密组件，拖慢启动与首次渲染。
+ */
+object SettingsRepositoryProvider {
+    @Volatile
+    private var instance: SettingsRepository? = null
+
+    fun get(context: Context): SettingsRepository =
+        instance ?: synchronized(this) {
+            instance ?: SettingsRepository(context.applicationContext).also { instance = it }
+        }
+}
+
+class SettingsRepository private constructor(context: Context) {
+
+    constructor(context: Context, unused: Unit = Unit) : this(context.applicationContext)
+
+    /** 统一的获取入口：优先使用进程级单例 */
+    companion object {
+        fun get(context: Context): SettingsRepository = SettingsRepositoryProvider.get(context)
+    }
+
+    private val appContext: Context = context.applicationContext
+
     private val dataStore = context.dataStore
 
     // 实例化加密工具
@@ -54,8 +83,19 @@ class SettingsRepository(private val context: Context) {
     @Volatile
     private var lastRawJson: String? = null
 
+    // 内存缓存：MCP 服务器列表（同样用于避免重复解密）
+    @Volatile
+    private var lastMcpJson: String? = null
+
+    @Volatile
+    private var cachedMcpServers: List<McpServer>? = null
+
     // 1. 模型列表 Flow (READ: 从 DataStore 读取后 -> 解密 API Key)
     //    增加内存缓存，避免重复解密
+    //
+    //    distinctUntilChanged 是关键：DataStore 每次写入（包括只改了一个无关的
+    //    布尔开关）都会重新发送整份 Preferences。如果下游不去重，所有依赖的
+    //    Flow 都会重发数据、重新解密与反序列化，表现为全局卡顿。
     val allModelsFlow: Flow<List<LlmModel>> = dataStore.data.map { preferences ->
         val jsonString = preferences[PreferencesKeys.MODELS_LIST] ?: "[]"
 
@@ -94,19 +134,24 @@ class SettingsRepository(private val context: Context) {
         // 写入内存缓存
         cachedDecryptedModels = decryptedModels
         decryptedModels
-    }
+    }.distinctUntilChanged()
+
+    /** 当前模型 ID，单独暴露给 combine 使用，避免重复 map */
+    private val currentModelIdFlow: Flow<String?> = dataStore.data.map { preferences ->
+        preferences[PreferencesKeys.CURRENT_MODEL_ID]
+    }.distinctUntilChanged()
 
     // 2. 当前选中的模型 Flow (使用缓存优化)
     val currentModelFlow: Flow<LlmModel?> = combine(
         allModelsFlow,
-        dataStore.data.map { it[PreferencesKeys.CURRENT_MODEL_ID] }
+        currentModelIdFlow
     ) { models, currentId ->
         if (models.isEmpty()) {
             null
         } else {
             models.find { it.id == currentId } ?: models.firstOrNull()
         }
-    }
+    }.distinctUntilChanged()
 
     // 3. 设置当前使用的模型 ID
     suspend fun setCurrentModel(modelId: String) {
@@ -120,7 +165,7 @@ class SettingsRepository(private val context: Context) {
     // 6. 主题模式 Flow
     val darkThemeFlow: Flow<Boolean> = dataStore.data.map { preferences ->
         preferences[PreferencesKeys.DARK_THEME_ENABLED] ?: false
-    }
+    }.distinctUntilChanged()
 
     // 7. 设置主题模式
     suspend fun setDarkTheme(isDark: Boolean) {
@@ -134,7 +179,7 @@ class SettingsRepository(private val context: Context) {
     // 8. 自动更新检查开关 Flow（默认开启）
     val autoUpdateCheckFlow: Flow<Boolean> = dataStore.data.map { preferences ->
         preferences[PreferencesKeys.AUTO_UPDATE_CHECK] ?: true
-    }
+    }.distinctUntilChanged()
 
     // 9. 设置自动更新检查
     suspend fun setAutoUpdateCheck(enabled: Boolean) {
@@ -148,7 +193,7 @@ class SettingsRepository(private val context: Context) {
     // 10. 应用语言 Flow（默认空字符串表示跟随系统）
     val appLanguageFlow: Flow<String> = dataStore.data.map { preferences ->
         preferences[PreferencesKeys.APP_LANGUAGE] ?: ""
-    }
+    }.distinctUntilChanged()
 
     // 11. 设置应用语言
     suspend fun setAppLanguage(languageCode: String) {
@@ -161,9 +206,14 @@ class SettingsRepository(private val context: Context) {
 
     // 12. MCP 服务器列表 Flow (READ: 读取后解密 API Key)
     val mcpServersFlow: Flow<List<McpServer>> = dataStore.data.map { preferences ->
+        // 与模型列表同理：JSON 没变就不再重复解密
         val jsonString = preferences[PreferencesKeys.MCP_SERVERS_LIST] ?: "[]"
+        if (jsonString == lastMcpJson && cachedMcpServers != null) {
+            return@map cachedMcpServers!!
+        }
+        lastMcpJson = jsonString
         val servers = gson.fromJson<List<McpServer>>(jsonString, mcpServerListType) ?: emptyList()
-        servers.map { server ->
+        val decryptedServers = servers.map { server ->
             // 检查是否有加密标记（apiKey 可能为 null：旧数据未包含该字段）
             if (server.apiKey?.startsWith("encrypted:") == true) {
                 try {
@@ -178,7 +228,9 @@ class SettingsRepository(private val context: Context) {
                 server.copy(apiKey = "")
             }
         }
-    }
+        cachedMcpServers = decryptedServers
+        decryptedServers
+    }.distinctUntilChanged()
 
     // 13. 添加或更新 MCP 服务器
     suspend fun addOrUpdateMcpServer(server: McpServer) {
@@ -302,7 +354,7 @@ class SettingsRepository(private val context: Context) {
     //     记录它可以让应用在冷启动后自动恢复上次的对话
     val activeConversationIdFlow: Flow<String?> = dataStore.data.map { preferences ->
         preferences[PreferencesKeys.ACTIVE_CONVERSATION_ID]
-    }
+    }.distinctUntilChanged()
 
     // 17. 记住/清除当前会话 ID
     suspend fun setActiveConversationId(conversationId: String?) {
@@ -320,7 +372,7 @@ class SettingsRepository(private val context: Context) {
     // 18. 启动时是否恢复上次对话 Flow（默认 false：每次启动都从新对话开始）
     val resumeLastConversationFlow: Flow<Boolean> = dataStore.data.map { preferences ->
         preferences[PreferencesKeys.RESUME_LAST_CONVERSATION] ?: false
-    }
+    }.distinctUntilChanged()
 
     // 19. 设置启动时是否恢复上次对话
     suspend fun setResumeLastConversation(enabled: Boolean) {
@@ -334,7 +386,7 @@ class SettingsRepository(private val context: Context) {
     // 20. 是否已同意法律与隐私政策（缺失时视为未同意）
     val legalAcceptedFlow: Flow<Boolean> = dataStore.data.map { preferences ->
         preferences[PreferencesKeys.LEGAL_ACCEPTED] ?: false
-    }
+    }.distinctUntilChanged()
 
     // 21. 记录用户已同意法律条款
     suspend fun setLegalAccepted(accepted: Boolean) {

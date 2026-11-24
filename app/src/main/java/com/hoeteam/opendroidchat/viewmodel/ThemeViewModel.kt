@@ -49,7 +49,7 @@ class ThemeViewModel(private val settingsRepository: SettingsRepository) : ViewM
 class ThemeViewModelFactory(private val context: Context) : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(ThemeViewModel::class.java)) {
-            val settingsRepository = SettingsRepository(context)
+            val settingsRepository = SettingsRepository.get(context)
             @Suppress("UNCHECKED_CAST")
             return ThemeViewModel(settingsRepository) as T
         }
