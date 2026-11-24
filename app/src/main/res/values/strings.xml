@@ -259,4 +259,13 @@
     <string name="history_active">当前对话</string>
     <string name="history_untitled">新对话</string>
     <string name="history_busy">正在生成回复，请稍后再切换对话</string>
+
+    <!-- 聊天页快捷开关 Chips -->
+    <string name="chat_chip_thinking">思考</string>
+    <string name="chat_chip_thinking_desc">开启后模型会先推理再作答</string>
+    <string name="chat_chip_effort">思考强度</string>
+    <string name="chat_chip_mcp">MCP 工具</string>
+    <string name="chat_chip_mcp_desc">允许模型调用 MCP 服务器工具</string>
+    <string name="chip_on">开</string>
+    <string name="chip_off">关</string>
 </resources>

@@ -13,6 +13,8 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.*
@@ -326,7 +328,10 @@ private fun ThinkingBlock(
     reasoningText: String,
     isStreaming: Boolean
 ) {
-    var expanded by remember { mutableStateOf(true) }
+    // 流式思考过程中默认折叠：内容每帧都在变长，展开会让整条消息高度持续抖动；
+    // 思考结束后再自动展开，用户点一下仍可随时收起
+    var userExpanded by remember { mutableStateOf<Boolean?>(null) }
+    val expanded = userExpanded ?: !isStreaming
 
     Surface(
         shape = RoundedCornerShape(12.dp),
@@ -339,10 +344,17 @@ private fun ThinkingBlock(
             modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp)
         ) {
             // 标题栏 - 可折叠
+            // 显式传 indication = null：Compose 1.12 的 clickable 不再接受
+            // Material 的 PlatformRipple（非 IndicationNodeFactory），
+            // 思考块一旦挂载就会直接崩溃
+            val headerInteraction = remember { MutableInteractionSource() }
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clickable { expanded = !expanded },
+                    .clickable(
+                        interactionSource = headerInteraction,
+                        indication = null
+                    ) { userExpanded = !expanded },
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
@@ -364,13 +376,16 @@ private fun ThinkingBlock(
                 )
             }
 
-            // 思考内容
+            // 思考内容：限高 + 可滚动，避免超长思考把整条消息撑到几屏高
             AnimatedVisibility(visible = expanded) {
                 Text(
                     text = reasoningText,
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.85f),
-                    modifier = Modifier.padding(top = 8.dp)
+                    modifier = Modifier
+                        .padding(top = 8.dp)
+                        .heightIn(max = 260.dp)
+                        .verticalScroll(rememberScrollState())
                 )
             }
         }
@@ -426,11 +441,15 @@ private fun McpCallsBlock(calls: List<McpCallInfo>) {
         Column(
             modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp)
         ) {
-            // 标题栏 - 可折叠
+            // 标题栏 - 可折叠（同样显式传 indication = null，避免 MCP 块挂载即崩）
+            val headerInteraction = remember { MutableInteractionSource() }
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clickable { expanded = !expanded },
+                    .clickable(
+                        interactionSource = headerInteraction,
+                        indication = null
+                    ) { expanded = !expanded },
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(

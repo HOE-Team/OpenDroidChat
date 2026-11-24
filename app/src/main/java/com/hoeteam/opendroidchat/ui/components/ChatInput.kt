@@ -124,7 +124,7 @@ fun ChatInput(
                     onValueChange = onTextChange,
                     modifier = Modifier
                         .weight(1f)
-                        .padding(horizontal = 4.dp, vertical = 10.dp),
+                        .padding(horizontal = 4.dp),
                     enabled = !isLoading,
                     textStyle = MaterialTheme.typography.bodyLarge.copy(
                         color = if (isLoading) {
@@ -134,11 +134,22 @@ fun ChatInput(
                         }
                     ),
                     cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
-                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Send),
+                    keyboardOptions = KeyboardOptions(
+                        imeAction = ImeAction.Send,
+                        // 关闭输入法的自动填充/建议：输入框上方不再弹出"粘贴 / 自动填充"浮层
+                        autoCorrectEnabled = false
+                    ),
                     keyboardActions = KeyboardActions(onSend = { if (isFabEnabled) onSend() }),
                     maxLines = 5,
                     decorationBox = { innerTextField ->
-                        Box {
+                        // 占位文字与输入文字必须共用同一个容器和同一段垂直内边距，
+                        // 否则两者的基线不同，会出现"光标在中间、提示文字偏上"的错位
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 12.dp),
+                            contentAlignment = Alignment.CenterStart
+                        ) {
                             if (text.isEmpty()) {
                                 Text(
                                     text = stringResource(R.string.chat_input_placeholder),
@@ -246,7 +257,11 @@ private fun FileChip(
                 contentDescription = stringResource(R.string.chat_remove_file),
                 modifier = Modifier
                     .size(18.dp)
-                    .clickable(onClick = onRemove),
+                    .clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null,
+                        onClick = onRemove
+                    ),
                 tint = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }

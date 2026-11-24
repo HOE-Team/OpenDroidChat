@@ -204,10 +204,22 @@ class MainActivity : AppCompatActivity() {
                 val settingsRepo = SettingsRepository.get(this@MainActivity)
                 settingsRepo.appLanguageFlow.first()
             }
-            applyLanguage(languageCode)
+            // 用「跟随系统」或与当前已生效的语言相同时，不要再调用 setApplicationLocales：
+            // 它会触发 Activity 重建，在 onCreate 阶段重建会进入无意义的循环
+            val desired = localeListFor(languageCode)
+            if (desired == AppCompatDelegate.getApplicationLocales()) return
+            AppCompatDelegate.setApplicationLocales(desired)
         } catch (_: Exception) {
             // 语言应用失败不影响主流程
         }
+    }
+
+    /** 语言代码 -> LocaleListCompat（空字符串表示跟随系统） */
+    private fun localeListFor(languageCode: String): LocaleListCompat = when (languageCode) {
+        "zh-CN" -> LocaleListCompat.forLanguageTags("zh-CN")
+        "zh-TW" -> LocaleListCompat.forLanguageTags("zh-TW")
+        "en" -> LocaleListCompat.forLanguageTags("en")
+        else -> LocaleListCompat.getEmptyLocaleList()
     }
 
     /**
@@ -229,13 +241,7 @@ class MainActivity : AppCompatActivity() {
      * 根据语言代码设置 AppCompatDelegate 的区域设置。
      */
     private fun applyLanguage(languageCode: String) {
-        val localeList = when (languageCode) {
-            "zh-CN" -> LocaleListCompat.forLanguageTags("zh-CN")
-            "zh-TW" -> LocaleListCompat.forLanguageTags("zh-TW")
-            "en" -> LocaleListCompat.forLanguageTags("en")
-            else -> LocaleListCompat.getEmptyLocaleList() // 跟随系统
-        }
-        AppCompatDelegate.setApplicationLocales(localeList)
+        AppCompatDelegate.setApplicationLocales(localeListFor(languageCode))
     }
 
     /**

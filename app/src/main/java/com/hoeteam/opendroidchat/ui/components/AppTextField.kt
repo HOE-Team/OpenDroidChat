@@ -63,11 +63,9 @@ fun AppTextField(
         color = MaterialTheme.colorScheme.surface,
         border = BorderStroke(
             1.dp,
-            if (enabled) {
-                MaterialTheme.colorScheme.outline
-            } else {
-                MaterialTheme.colorScheme.outlineVariant
-            }
+            // 可用与只读（选择框）统一使用 outlineVariant：
+            // outline 对比过强，会让输入框看着比同屏的选择框"更重"，破坏一致性
+            MaterialTheme.colorScheme.outlineVariant
         )
     ) {
         androidx.compose.foundation.layout.Column(
@@ -77,6 +75,9 @@ fun AppTextField(
                 Text(
                     text = labelText,
                     style = MaterialTheme.typography.labelMedium,
+                    // 标签一律用主色。不看 enabled：选择框是以"禁用态只读展示"的方式实现的，
+                    // 如果让标签跟随 enabled 变色，同屏就会出现"输入框标签青色、选择框标签黑色"的
+                    // 两套文字规范，用户会误以为选择框坏掉了。
                     color = MaterialTheme.colorScheme.primary
                 )
             }
@@ -93,11 +94,9 @@ fun AppTextField(
                     maxLines = maxLines,
                     minLines = minLines,
                     textStyle = textStyle.copy(
-                        color = if (enabled) {
-                            MaterialTheme.colorScheme.onSurface
-                        } else {
-                            MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
-                        }
+                        // 真实内容用最高对比度。禁用态也不再降低透明度：
+                        // 选择框的值是有效信息，不是"不可用的灰字"
+                        color = MaterialTheme.colorScheme.onSurface
                     ),
                     cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
                     visualTransformation = visualTransformation,
@@ -109,7 +108,8 @@ fun AppTextField(
                                 Text(
                                     text = placeholderText,
                                     style = textStyle,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    // 占位文字必须明显弱于真实内容，否则会被误读成"已经填好的值"
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.55f),
                                     maxLines = maxLines
                                 )
                             }

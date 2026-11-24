@@ -37,6 +37,8 @@ import com.hoeteam.opendroidchat.R
 import com.hoeteam.opendroidchat.data.LlmModel
 import com.hoeteam.opendroidchat.data.LlmProvider
 import com.hoeteam.opendroidchat.ui.components.AppTextField
+import com.hoeteam.opendroidchat.ui.components.M3E_PILL_SHAPE
+import com.hoeteam.opendroidchat.ui.components.M3ESection
 import com.hoeteam.opendroidchat.viewmodel.ChatViewModel
 import com.hoeteam.opendroidchat.viewmodel.ChatViewModelFactory
 
@@ -143,11 +145,11 @@ fun ModelEditScreen(
                     enabled = isSaveEnabled,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(64.dp)
+                        .height(56.dp)
                         .scale(scale),
-                    shape = RoundedCornerShape(20.dp),
+                    shape = M3E_PILL_SHAPE,
                     interactionSource = interactionSource,
-                    contentPadding = PaddingValues(16.dp)
+                    contentPadding = PaddingValues(horizontal = 24.dp)
                 ) {
                     Text(
                         if (isNewModel) stringResource(R.string.model_edit_save_add) else stringResource(R.string.model_edit_save_edit),
@@ -396,28 +398,11 @@ fun ModelEditScreen(
     }
 }
 
+/** 编辑页的分组容器复用统一设计系统的 M3ESection（带描边） */
 @Composable
 private fun M3EInputSection(
     title: String,
     content: @Composable ColumnScope.() -> Unit
 ) {
-    Column(modifier = Modifier.fillMaxWidth()) {
-        Text(
-            text = title,
-            style = MaterialTheme.typography.labelLarge,
-            color = MaterialTheme.colorScheme.primary,
-            fontWeight = FontWeight.ExtraBold,
-            modifier = Modifier.padding(start = 4.dp, bottom = 8.dp)
-        )
-        Surface(
-            shape = RoundedCornerShape(24.dp),
-            color = MaterialTheme.colorScheme.surfaceContainerLow,
-            tonalElevation = 1.dp
-        ) {
-            Column(
-                modifier = Modifier.padding(16.dp),
-                content = content
-            )
-        }
-    }
+    M3ESection(title = title, content = content)
 }

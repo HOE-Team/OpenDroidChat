@@ -76,6 +76,57 @@ class ChatViewModel(
     private val _isResponding = MutableStateFlow(false)
     val isResponding: StateFlow<Boolean> = _isResponding.asStateFlow()
 
+    // ------------------- 聊天内的思考 / MCP 快捷开关 -------------------
+
+    /** 本次会话是否启用思考（在模型配置的基础上可在聊天页临时关闭） */
+    private val _thinkingEnabled = MutableStateFlow(true)
+
+    /** 思考强度覆盖值；null 表示沿用模型配置里保存的值 */
+    private val _reasoningEffort = MutableStateFlow<String?>(null)
+
+    /** 本次会话是否允许调用 MCP 工具 */
+    private val _mcpEnabled = MutableStateFlow(true)
+
+    /** 供 UI 读取的思考开关：模型不支持思考时恒为 false */
+    val thinkingEnabled: StateFlow<Boolean> = combine(
+        currentModel,
+        _thinkingEnabled
+    ) { model, enabled ->
+        enabled && (model?.supportsThinking == true)
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), true)
+
+    val mcpEnabled: StateFlow<Boolean> = _mcpEnabled.asStateFlow()
+
+    /** 实际生效的思考强度（模型默认值 + 用户覆盖） */
+    val reasoningEffort: StateFlow<String?> = combine(
+        currentModel,
+        _reasoningEffort
+    ) { model, override ->
+        override ?: model?.reasoningEffort
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
+
+    val reasoningEffortOptions: StateFlow<List<String>> = currentModel
+        .map { it?.reasoningEffortOptions.orEmpty() }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    fun setThinkingEnabled(enabled: Boolean) {
+        if (_thinkingEnabled.value == enabled) return
+        _thinkingEnabled.value = enabled
+        // 开启时如果没有覆盖值，用模型默认强度兜底
+        if (enabled && _reasoningEffort.value == null) {
+            _reasoningEffort.value = currentModel.value?.reasoningEffort
+                ?: currentModel.value?.reasoningEffortOptions?.firstOrNull()
+        }
+    }
+
+    fun setReasoningEffort(effort: String) {
+        _reasoningEffort.value = effort
+    }
+
+    fun setMcpEnabled(enabled: Boolean) {
+        _mcpEnabled.value = enabled
+    }
+
     // 错误状态：携带重试所需数据
     private val _errorState = MutableSharedFlow<ApiErrorState>()
     val errorState: SharedFlow<ApiErrorState> = _errorState.asSharedFlow()
@@ -315,8 +366,22 @@ class ChatViewModel(
     /**
      * 执行聊天请求（流式/非流式 / MCP 工具调用）
      */
-    private suspend fun executeChatRequest(currentModel: LlmModel, apiMessages: List<ApiMessage>) {
-        val enabledServers = mcpServers.value.filter { it.enabled }
+    private suspend fun executeChatRequest(baseModel: LlmModel, apiMessages: List<ApiMessage>) {
+        // 聊天页顶部的 Chips 可以在本次会话中临时开关思考 / MCP，
+        // 这里把覆盖值应用到请求所用的模型配置上，不改动已保存的设置
+        val currentModel = baseModel.copy(
+            enableThinking = if (_thinkingEnabled.value) baseModel.enableThinking else false,
+            reasoningEffort = when {
+                !_thinkingEnabled.value -> null
+                _reasoningEffort.value != null -> _reasoningEffort.value
+                else -> baseModel.reasoningEffort
+            }
+        )
+        val enabledServers = if (_mcpEnabled.value) {
+            mcpServers.value.filter { it.enabled }
+        } else {
+            emptyList()
+        }
         if (currentModel.enableMcp && enabledServers.isNotEmpty()) {
             executeMcpRequest(currentModel, apiMessages, enabledServers)
             return
@@ -830,8 +895,18 @@ class ChatViewModel(
     fun setCurrentModel(modelId: String) {
         viewModelScope.launch {
             settingsRepository.setCurrentModel(modelId)
+            // 切换模型后，重置本次会话的临时开关，回到新模型的默认配置，
+            // 避免上一个模型的"MCP 已关闭 / 思考强度=max"被带过去
+            resetChatToggles()
             clearChat()
         }
+    }
+
+    /** 把聊天页的临时开关恢复为模型的保存配置 */
+    private fun resetChatToggles() {
+        _thinkingEnabled.value = true
+        _mcpEnabled.value = true
+        _reasoningEffort.value = null
     }
 
     // ------------------- MCP 服务器配置逻辑 -------------------

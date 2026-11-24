@@ -47,6 +47,29 @@ data class LlmModel(
     val enableMcp: Boolean = false // 是否允许该模型调用 MCP 服务器工具
 )
 
+/**
+ * 该提供商是否支持「思考模式」。
+ *
+ * 只有明确验证过参数格式的提供商才会出现在这里：DeepSeek 用 thinking 字段，
+ * OpenAI 用 reasoning_effort。其它兼容端点不发送未验证的私有字段。
+ */
+val LlmProvider.supportsThinking: Boolean
+    get() = this == LlmProvider.DeepSeek || this == LlmProvider.OpenAI
+
+/** 该提供商支持的思考强度选项 */
+val LlmProvider.reasoningEffortOptions: List<String>
+    get() = when (this) {
+        LlmProvider.DeepSeek -> listOf("high", "max")
+        LlmProvider.OpenAI -> listOf("low", "medium", "high")
+        else -> emptyList()
+    }
+
+/** 便捷属性：当前模型是否支持思考 */
+val LlmModel.supportsThinking: Boolean get() = provider.supportsThinking
+
+/** 便捷属性：当前模型可选的思考强度 */
+val LlmModel.reasoningEffortOptions: List<String> get() = provider.reasoningEffortOptions
+
 // 聊天消息 (用于 UI 展示)
 @Immutable
 data class Message(

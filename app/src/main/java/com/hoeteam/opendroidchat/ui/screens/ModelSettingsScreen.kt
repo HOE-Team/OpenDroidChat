@@ -5,9 +5,6 @@ The source code is open-sourced under the MIT License.
 */
 package com.hoeteam.opendroidchat.ui.screens
 
-import androidx.compose.animation.*
-import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.spring
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -64,6 +61,7 @@ fun ModelSettingsScreen(
             )
         },
         floatingActionButton = {
+            // 新增模型入口保持 FAB 形态：右下角悬浮、跟随列表滚动语义
             FloatingActionButton(
                 onClick = { onNavigateToEditModel(null) },
                 shape = RoundedCornerShape(20.dp),
@@ -89,6 +87,15 @@ fun ModelSettingsScreen(
                 contentPadding = PaddingValues(vertical = 12.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
+                item(key = "section_title") {
+                    Text(
+                        text = stringResource(R.string.model_settings_title),
+                        style = MaterialTheme.typography.labelLarge,
+                        color = MaterialTheme.colorScheme.primary,
+                        fontWeight = FontWeight.ExtraBold,
+                        modifier = Modifier.padding(start = 16.dp, bottom = 4.dp)
+                    )
+                }
                 items(allModels, key = { it.id }) { model ->
                     ModelListItem(
                         model = model,

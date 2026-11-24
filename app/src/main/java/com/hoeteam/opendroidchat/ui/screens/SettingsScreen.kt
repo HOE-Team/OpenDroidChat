@@ -229,29 +229,46 @@ fun SettingsScreen(
                         Column {
                             languageOptions.forEach { (code, displayName) ->
                                 val onLanguageSelected: () -> Unit = {
-                                    scope.launch {
-                                        settingsRepository.setAppLanguage(code)
-                                        showLanguageDialog = false
-                                        // 立即应用语言设置
-                                        val localeList = when (code) {
-                                            "zh-CN" -> LocaleListCompat.forLanguageTags("zh-CN")
-                                            "zh-TW" -> LocaleListCompat.forLanguageTags("zh-TW")
-                                            "en" -> LocaleListCompat.forLanguageTags("en")
-                                            else -> LocaleListCompat.getEmptyLocaleList()
-                                        }
+                                    // 先关掉对话框再切换语言：setApplicationLocales 会重建 Activity，
+                                    // 对话框若还处于打开状态，重建后的首帧会带着它一起组合
+                                    showLanguageDialog = false
+                                    val localeList = when (code) {
+                                        "zh-CN" -> LocaleListCompat.forLanguageTags("zh-CN")
+                                        "zh-TW" -> LocaleListCompat.forLanguageTags("zh-TW")
+                                        "en" -> LocaleListCompat.forLanguageTags("en")
+                                        else -> LocaleListCompat.getEmptyLocaleList()
+                                    }
+                                    // 与原语言相同就不重建 Activity
+                                    if (localeList != AppCompatDelegate.getApplicationLocales()) {
                                         AppCompatDelegate.setApplicationLocales(localeList)
                                     }
+                                    scope.launch {
+                                        settingsRepository.setAppLanguage(code)
+                                    }
                                 }
+                                // 注意：不能用无参 clickable / RadioButton 默认波纹。
+                                // 当前 foundation 1.12 要求 LocalIndication 必须是
+                                // IndicationNodeFactory，而 Material 的 PlatformRipple 不是，
+                                // 一旦弹窗里出现这类节点就会直接崩溃（语言切换即命中）。
+                                val rowInteraction = remember { MutableInteractionSource() }
                                 Row(
                                     modifier = Modifier
                                         .fillMaxWidth()
-                                        .clickable(onClick = onLanguageSelected)
+                                        .clickable(
+                                            interactionSource = rowInteraction,
+                                            indication = null,
+                                            onClick = onLanguageSelected
+                                        )
                                         .padding(vertical = 12.dp, horizontal = 8.dp),
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
                                     RadioButton(
                                         selected = appLanguage == code,
-                                        onClick = onLanguageSelected
+                                        onClick = onLanguageSelected,
+                                        colors = RadioButtonDefaults.colors(
+                                            selectedColor = MaterialTheme.colorScheme.primary,
+                                            unselectedColor = MaterialTheme.colorScheme.outline
+                                        )
                                     )
                                     Spacer(modifier = Modifier.width(12.dp))
                                     Text(

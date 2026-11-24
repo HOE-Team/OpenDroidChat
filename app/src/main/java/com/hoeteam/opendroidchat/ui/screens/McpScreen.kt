@@ -18,6 +18,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -58,6 +59,7 @@ fun McpScreen(
             )
         },
         floatingActionButton = {
+            // 新增 MCP 服务器入口保持 FAB 形态，与模型列表页一致
             FloatingActionButton(
                 onClick = { onNavigateToEditServer(null) },
                 shape = RoundedCornerShape(20.dp),
@@ -83,6 +85,15 @@ fun McpScreen(
                 contentPadding = PaddingValues(vertical = 12.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
+                item(key = "section_title") {
+                    Text(
+                        text = stringResource(R.string.mcp_settings_title),
+                        style = MaterialTheme.typography.labelLarge,
+                        color = MaterialTheme.colorScheme.primary,
+                        fontWeight = FontWeight.ExtraBold,
+                        modifier = Modifier.padding(start = 16.dp, bottom = 4.dp)
+                    )
+                }
                 items(mcpServers, key = { it.id }) { server ->
                     McpServerListItem(
                         server = server,

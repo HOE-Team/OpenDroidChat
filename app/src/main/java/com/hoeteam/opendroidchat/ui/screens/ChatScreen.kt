@@ -36,6 +36,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.hoeteam.opendroidchat.R
 import com.hoeteam.opendroidchat.data.createFilePickerIntent
+import com.hoeteam.opendroidchat.data.supportsThinking
 import com.hoeteam.opendroidchat.data.selectFileFromUri
 import com.hoeteam.opendroidchat.ui.components.*
 import com.hoeteam.opendroidchat.viewmodel.ApiErrorState
@@ -59,6 +60,11 @@ fun ChatScreen(
     val inputText by viewModel.inputText.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val isResponding by viewModel.isResponding.collectAsState()
+    val thinkingEnabled by viewModel.thinkingEnabled.collectAsState()
+    val reasoningEffort by viewModel.reasoningEffort.collectAsState()
+    val effortOptions by viewModel.reasoningEffortOptions.collectAsState()
+    val mcpEnabled by viewModel.mcpEnabled.collectAsState()
+    val mcpServers by viewModel.mcpServers.collectAsState()
     val selectedFile by viewModel.selectedFile.collectAsState()
     val editingMessageId by viewModel.editingMessageId.collectAsState()
     val editingText by viewModel.editingText.collectAsState()
@@ -233,19 +239,34 @@ fun ChatScreen(
         bottomBar = {
             // 空状态时输入框在内容区居中显示，因此这里隐藏底部输入框
             if (messages.isNotEmpty()) {
-                ChatInput(
-                    text = inputText,
-                    onTextChange = viewModel::updateInputText,
-                    onSend = viewModel::sendMessage,
-                    // 思考阶段输入框保持可用，只有正文开始输出后才锁定
-                    isLoading = isResponding,
-                    selectedFile = selectedFile,
-                    onAddFile = {
-                        val intent = createFilePickerIntent()
-                        filePickerLauncher.launch(intent)
-                    },
-                    onRemoveFile = viewModel::clearSelectedFile
-                )
+                Column {
+                    // 聊天页快捷开关：思考 / 思考强度 / MCP
+                    ChatToolChips(
+                        thinkingSupported = currentModel?.supportsThinking == true,
+                        thinkingEnabled = thinkingEnabled,
+                        onThinkingChange = viewModel::setThinkingEnabled,
+                        effort = reasoningEffort,
+                        effortOptions = effortOptions,
+                        onEffortChange = viewModel::setReasoningEffort,
+                        mcpAvailable = currentModel?.enableMcp == true &&
+                            mcpServers.any { it.enabled },
+                        mcpEnabled = mcpEnabled,
+                        onMcpChange = viewModel::setMcpEnabled
+                    )
+                    ChatInput(
+                        text = inputText,
+                        onTextChange = viewModel::updateInputText,
+                        onSend = viewModel::sendMessage,
+                        // 思考阶段输入框保持可用，只有正文开始输出后才锁定
+                        isLoading = isResponding,
+                        selectedFile = selectedFile,
+                        onAddFile = {
+                            val intent = createFilePickerIntent()
+                            filePickerLauncher.launch(intent)
+                        },
+                        onRemoveFile = viewModel::clearSelectedFile
+                    )
+                }
             }
         },
         floatingActionButton = {

@@ -35,6 +35,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.hoeteam.opendroidchat.R
 import com.hoeteam.opendroidchat.data.UpdateManager
+import com.hoeteam.opendroidchat.ui.components.M3ECard
+import com.hoeteam.opendroidchat.ui.components.M3ECardRow
+import com.hoeteam.opendroidchat.ui.components.M3EPillButton
+import com.hoeteam.opendroidchat.ui.components.M3EPillLabel
+import com.hoeteam.opendroidchat.ui.components.M3EPillOutlinedButton
+import com.hoeteam.opendroidchat.ui.components.M3ESection
 import com.hoeteam.opendroidchat.network.UpdateCheckResult
 import com.hoeteam.opendroidchat.network.VersionType
 import kotlinx.coroutines.*
@@ -129,37 +135,18 @@ fun AboutScreen(
                 .padding(horizontal = 16.dp, vertical = 8.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // 项目介绍
-            Surface(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(28.dp),
-                color = MaterialTheme.colorScheme.surfaceContainerHigh,
-                tonalElevation = 2.dp
-            ) {
-                Column(modifier = Modifier.padding(24.dp)) {
-                    Text(
-                        text = stringResource(R.string.about_app_name),
-                        style = MaterialTheme.typography.headlineSmall,
-                        fontWeight = FontWeight.ExtraBold,
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(
-                        text = stringResource(R.string.about_app_desc),
-                        style = MaterialTheme.typography.bodyLarge,
-                        lineHeight = 24.sp
-                    )
-                }
+            // 项目介绍（M3E 描边卡片）
+            M3ESection(title = stringResource(R.string.about_app_name)) {
+                Text(
+                    text = stringResource(R.string.about_app_desc),
+                    style = MaterialTheme.typography.bodyLarge,
+                    lineHeight = 24.sp
+                )
             }
 
             // 版本信息卡片
-            Surface(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(28.dp),
-                color = MaterialTheme.colorScheme.surfaceContainer,
-                tonalElevation = 1.dp
-            ) {
-                Column(modifier = Modifier.padding(24.dp)) {
+            M3ESection(title = stringResource(R.string.about_title)) {
+                Column {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
@@ -168,22 +155,13 @@ fun AboutScreen(
                                 fontWeight = FontWeight.Bold
                             )
                             Spacer(modifier = Modifier.height(6.dp))
-                            Surface(
-                                color = MaterialTheme.colorScheme.secondaryContainer,
-                                shape = RoundedCornerShape(100)
-                            ) {
-                                Text(
-                                    text = when (currentVersionType) {
-                                        VersionType.NIGHTLY -> stringResource(R.string.about_version_nightly)
-                                        VersionType.BETA -> stringResource(R.string.about_version_beta)
-                                        VersionType.STABLE -> stringResource(R.string.about_version_stable)
-                                    },
-                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
-                                    style = MaterialTheme.typography.labelMedium,
-                                    fontWeight = FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.onSecondaryContainer
-                                )
-                            }
+                            M3EPillLabel(
+                                text = when (currentVersionType) {
+                                    VersionType.NIGHTLY -> stringResource(R.string.about_version_nightly)
+                                    VersionType.BETA -> stringResource(R.string.about_version_beta)
+                                    VersionType.STABLE -> stringResource(R.string.about_version_stable)
+                                }
+                            )
                         }
                     }
 
@@ -193,26 +171,18 @@ fun AboutScreen(
                     Box(modifier = Modifier.fillMaxWidth()) {
                         if (currentVersionType == VersionType.NIGHTLY) {
                             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                Button(
+                                M3EPillButton(
+                                    text = stringResource(R.string.about_build_history),
                                     onClick = { updateManager.openActionsPage() },
-                                    modifier = Modifier.weight(1f),
-                                    shape = RoundedCornerShape(16.dp),
-                                    contentPadding = PaddingValues(vertical = 12.dp)
-                                ) {
-                                    Icon(Icons.Default.Build, null, modifier = Modifier.size(18.dp))
-                                    Spacer(modifier = Modifier.width(8.dp))
-                                    Text(stringResource(R.string.about_build_history))
-                                }
-                                OutlinedButton(
+                                    icon = Icons.Default.Build,
+                                    modifier = Modifier.weight(1f)
+                                )
+                                M3EPillOutlinedButton(
+                                    text = stringResource(R.string.about_check_update),
                                     onClick = { checkForUpdates() },
-                                    modifier = Modifier.weight(1f),
-                                    shape = RoundedCornerShape(16.dp),
-                                    contentPadding = PaddingValues(vertical = 12.dp)
-                                ) {
-                                    Icon(Icons.Default.Refresh, null, modifier = Modifier.size(18.dp))
-                                    Spacer(modifier = Modifier.width(8.dp))
-                                    Text(stringResource(R.string.about_check_update))
-                                }
+                                    icon = Icons.Default.Refresh,
+                                    modifier = Modifier.weight(1f)
+                                )
                             }
                         } else {
                             // 检查时显示进度条
@@ -224,37 +194,31 @@ fun AboutScreen(
                                 )
                             } else {
                                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                                    // 始终显示"立即检查新版本"按钮
-                                    Button(
+                                    // 始终显示"立即检查新版本"按钮（药丸形）
+                                    M3EPillButton(
+                                        text = stringResource(R.string.about_check_now),
                                         onClick = { checkForUpdates() },
-                                        modifier = Modifier.fillMaxWidth(),
-                                        shape = RoundedCornerShape(16.dp),
-                                        contentPadding = PaddingValues(vertical = 12.dp)
-                                    ) {
-                                        Icon(Icons.Default.Refresh, null, modifier = Modifier.size(18.dp))
-                                        Spacer(modifier = Modifier.width(8.dp))
-                                        Text(stringResource(R.string.about_check_now), fontWeight = FontWeight.Bold)
-                                    }
+                                        icon = Icons.Default.Refresh,
+                                        modifier = Modifier.fillMaxWidth()
+                                    )
 
                                     // 当检查结果有新版本时，显示"获取更新"按钮
                                     if (updateResult?.hasUpdate == true) {
-                                        Button(
-                                            onClick = {
-                                                val versionTag = updateResult?.latestVersion
-                                                updateManager.openDownloadPage(versionTag)
+                                        val versionTag = updateResult?.latestVersion ?: ""
+                                        M3EPillButton(
+                                            text = if (versionTag.isNotEmpty()) {
+                                                stringResource(R.string.about_get_update_with_version, versionTag)
+                                            } else {
+                                                stringResource(R.string.about_get_update)
                                             },
-                                            modifier = Modifier.fillMaxWidth(),
-                                            shape = RoundedCornerShape(16.dp),
-                                            contentPadding = PaddingValues(vertical = 12.dp)
-                                        ) {
-                                            val versionTag = updateResult?.latestVersion ?: ""
-                                            Icon(Icons.Default.Download, null, modifier = Modifier.size(18.dp))
-                                            Spacer(modifier = Modifier.width(8.dp))
-                                            Text(
-                                                if (versionTag.isNotEmpty()) stringResource(R.string.about_get_update_with_version, versionTag) else stringResource(R.string.about_get_update),
-                                                fontWeight = FontWeight.Bold
-                                            )
-                                        }
+                                            onClick = {
+                                                updateManager.openDownloadPage(
+                                                    updateResult?.latestVersion
+                                                )
+                                            },
+                                            icon = Icons.Default.Download,
+                                            modifier = Modifier.fillMaxWidth()
+                                        )
                                     }
                                 }
                             }
@@ -275,33 +239,8 @@ fun AboutScreen(
             }
 
             // 许可协议入口卡片
-            val interactionSource = remember { MutableInteractionSource() }
-            val isPressed by interactionSource.collectIsPressedAsState()
-            val scale by animateFloatAsState(
-                targetValue = if (isPressed) 0.96f else 1f,
-                animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessLow)
-            )
-
-            Surface(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .graphicsLayer {
-                        scaleX = scale
-                        scaleY = scale
-                    }
-                    .clickable(
-                        interactionSource = interactionSource,
-                        indication = null,
-                        onClick = onNavigateToLicense
-                    ),
-                shape = RoundedCornerShape(24.dp),
-                color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.2f),
-                border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.1f))
-            ) {
-                Row(
-                    modifier = Modifier.padding(24.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
+            M3ECard(onClick = onNavigateToLicense) {
+                M3ECardRow {
                     Column(modifier = Modifier.weight(1f)) {
                         Text(stringResource(R.string.about_license_title), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                         Text(stringResource(R.string.about_license_desc), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -311,26 +250,8 @@ fun AboutScreen(
             }
 
             // 法律性页面入口卡片
-            Surface(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .graphicsLayer {
-                        scaleX = scale
-                        scaleY = scale
-                    }
-                    .clickable(
-                        interactionSource = interactionSource,
-                        indication = null,
-                        onClick = onNavigateToLegal
-                    ),
-                shape = RoundedCornerShape(24.dp),
-                color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.2f),
-                border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.1f))
-            ) {
-                Row(
-                    modifier = Modifier.padding(24.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
+            M3ECard(onClick = onNavigateToLegal) {
+                M3ECardRow {
                     Column(modifier = Modifier.weight(1f)) {
                         Text(stringResource(R.string.about_legal_title), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                         Text(stringResource(R.string.about_legal_desc), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)

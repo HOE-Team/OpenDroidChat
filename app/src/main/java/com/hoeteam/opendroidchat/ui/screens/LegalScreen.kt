@@ -7,7 +7,6 @@ package com.hoeteam.opendroidchat.ui.screens
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -20,6 +19,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.hoeteam.opendroidchat.R
+import com.hoeteam.opendroidchat.ui.components.M3ESection
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -67,45 +67,33 @@ fun LegalScreen(
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
 
-            // 免责声明
-            Surface(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(28.dp),
-                color = MaterialTheme.colorScheme.surfaceContainerHigh,
-                tonalElevation = 2.dp
-            ) {
-                Column(modifier = Modifier.padding(24.dp)) {
-                    Text(
-                        text = stringResource(R.string.legal_disclaimer_title),
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold
-                    )
-                    Spacer(modifier = Modifier.height(12.dp))
-                    Text(
-                        text = stringResource(R.string.legal_disclaimer_body),
-                        style = MaterialTheme.typography.bodyLarge,
-                        lineHeight = 24.sp
-                    )
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Text(
-                        text = stringResource(R.string.legal_disclaimer_agree),
-                        style = MaterialTheme.typography.bodyMedium,
-                        fontWeight = FontWeight.SemiBold
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(
-                        text = stringResource(R.string.legal_disclaimer_full,
-                            stringResource(R.string.legal_disclaimer_clause1),
-                            stringResource(R.string.legal_disclaimer_clause2),
-                            stringResource(R.string.legal_disclaimer_clause3),
-                            stringResource(R.string.legal_disclaimer_clause4),
-                            stringResource(R.string.legal_disclaimer_clause5)
-                        ),
-                        style = MaterialTheme.typography.bodyMedium,
-                        lineHeight = 22.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
+            // 免责声明（M3E 描边卡片）
+            M3ESection(title = stringResource(R.string.legal_disclaimer_title)) {
+                Text(
+                    text = stringResource(R.string.legal_disclaimer_body),
+                    style = MaterialTheme.typography.bodyLarge,
+                    lineHeight = 24.sp
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+                Text(
+                    text = stringResource(R.string.legal_disclaimer_agree),
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.SemiBold
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = stringResource(
+                        R.string.legal_disclaimer_full,
+                        stringResource(R.string.legal_disclaimer_clause1),
+                        stringResource(R.string.legal_disclaimer_clause2),
+                        stringResource(R.string.legal_disclaimer_clause3),
+                        stringResource(R.string.legal_disclaimer_clause4),
+                        stringResource(R.string.legal_disclaimer_clause5)
+                    ),
+                    style = MaterialTheme.typography.bodyMedium,
+                    lineHeight = 22.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
             }
 
             // 生成内容与 MCP 工具调用免责
@@ -140,28 +128,15 @@ fun LegalScreen(
 }
 
 /**
- * 法律条款卡片：所有章节共用同一套外观。
+ * 法律条款卡片：所有章节共用同一套 M3E 外观。
  */
 @Composable
 private fun LegalSection(title: String, body: String) {
-    Surface(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(28.dp),
-        color = MaterialTheme.colorScheme.surfaceContainerHigh,
-        tonalElevation = 2.dp
-    ) {
-        Column(modifier = Modifier.padding(24.dp)) {
-            Text(
-                text = title,
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold
-            )
-            Spacer(modifier = Modifier.height(12.dp))
-            Text(
-                text = body,
-                style = MaterialTheme.typography.bodyLarge,
-                lineHeight = 24.sp
-            )
-        }
+    M3ESection(title = title) {
+        Text(
+            text = body,
+            style = MaterialTheme.typography.bodyLarge,
+            lineHeight = 24.sp
+        )
     }
 }

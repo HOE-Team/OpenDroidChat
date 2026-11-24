@@ -7,12 +7,14 @@ package com.hoeteam.opendroidchat.ui.components
 
 import android.text.format.DateUtils
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DeleteOutline
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -40,12 +42,21 @@ fun ConversationListItem(
     val shape = RoundedCornerShape(20.dp)
     val title = summary.title.ifBlank { stringResource(R.string.history_untitled) }
 
+    val interactionSource = remember { MutableInteractionSource() }
+
     Surface(
         modifier = modifier
             .fillMaxWidth()
             .alpha(if (enabled) 1f else 0.55f)
             .clip(shape)
-            .clickable(enabled = enabled, onClick = onClick),
+            // 显式传 indication = null：避免 foundation 1.12 对 LocalIndication
+            // 必须是 IndicationNodeFactory 的强制校验
+            .clickable(
+                interactionSource = interactionSource,
+                indication = null,
+                enabled = enabled,
+                onClick = onClick
+            ),
         shape = shape,
         color = if (isActive) {
             MaterialTheme.colorScheme.secondaryContainer
