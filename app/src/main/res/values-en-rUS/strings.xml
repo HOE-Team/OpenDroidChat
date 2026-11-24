@@ -56,6 +56,7 @@
 
     <string name="model_edit_thinking">Enable Thinking</string>
     <string name="model_edit_thinking_deepseek">DeepSeek V4 Deep Thinking</string>
+    <string name="model_edit_claude_removed">The native Claude protocol has been removed. Delete this model or switch to a custom OpenAI-compatible endpoint.</string>
     <string name="model_edit_thinking_claude">Claude Extended Thinking (Adaptive/Budget)</string>
     <string name="model_edit_thinking_gemini">Gemini Deep Thinking</string>
     <string name="model_edit_thinking_openai">OpenAI o-series / GPT-5 Reasoning</string>

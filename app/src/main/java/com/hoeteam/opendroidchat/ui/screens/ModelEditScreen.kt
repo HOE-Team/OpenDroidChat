@@ -69,17 +69,16 @@ fun ModelEditScreen(
     var effortExpanded by remember { mutableStateOf(false) }
 
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
-    val isSaveEnabled = name.isNotBlank() && apiKey.isNotBlank() && modelName.isNotBlank()
+    val isProviderSupported = provider.selectable
+    val isSaveEnabled = name.isNotBlank() && apiKey.isNotBlank() &&
+            modelName.isNotBlank() && isProviderSupported
 
     val supportsThinking = provider == LlmProvider.DeepSeek ||
-            provider == LlmProvider.Claude ||
-            provider == LlmProvider.Gemini ||
             provider == LlmProvider.OpenAI
 
     val supportsReasoningEffort = enableThinking && (
             provider == LlmProvider.DeepSeek ||
-            provider == LlmProvider.OpenAI ||
-            (provider == LlmProvider.Claude && modelName.isNotBlank())
+            provider == LlmProvider.OpenAI
             )
 
     Scaffold(
@@ -200,7 +199,7 @@ fun ModelEditScreen(
                         onDismissRequest = { expanded = false },
                         modifier = Modifier.background(MaterialTheme.colorScheme.surfaceContainerHigh)
                     ) {
-                        LlmProvider.entries.forEach { p ->
+                        LlmProvider.entries.filter { it.selectable }.forEach { p ->
                             DropdownMenuItem(
                                 text = { Text(p.displayName, fontWeight = FontWeight.Medium) },
                                 onClick = {
@@ -218,6 +217,15 @@ fun ModelEditScreen(
                             )
                         }
                     }
+                }
+
+                if (!provider.selectable) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = stringResource(R.string.model_edit_claude_removed),
+                        color = MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.bodySmall
+                    )
                 }
             }
 
@@ -302,8 +310,6 @@ fun ModelEditScreen(
                     Text(
                                 when (provider) {
                                     LlmProvider.DeepSeek -> stringResource(R.string.model_edit_thinking_deepseek)
-                                    LlmProvider.Claude -> stringResource(R.string.model_edit_thinking_claude)
-                                    LlmProvider.Gemini -> stringResource(R.string.model_edit_thinking_gemini)
                                     LlmProvider.OpenAI -> stringResource(R.string.model_edit_thinking_openai)
                                     else -> ""
                                 },
@@ -319,7 +325,6 @@ fun ModelEditScreen(
 
                         val effortOptions = when (provider) {
                             LlmProvider.DeepSeek -> listOf("high", "max")
-                            LlmProvider.Claude -> listOf("low", "medium", "high", "xhigh")
                             LlmProvider.OpenAI -> listOf("low", "medium", "high")
                             else -> emptyList()
                         }

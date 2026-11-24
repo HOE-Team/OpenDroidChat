@@ -40,7 +40,7 @@
 
 * 支持 Android 6.0（API 等级 23）及以上版本
 * 原生、美观的 Material 3 Expressive 界面，支持深色模式与横屏 NavigationRail
-* 内置 OpenAI / Azure OpenAI、Google Gemini、DeepSeek、Dashscope（阿里云百炼）、Claude，并支持自定义 API
+* 内置 OpenAI / Azure OpenAI、Google Gemini（OpenAI 兼容端点）、DeepSeek、Dashscope（阿里云百炼），并支持自定义 OpenAI 兼容 API；统一使用 `/chat/completions` 与标准 tool calling
 * 支持流式（打字机）与非流式输出
 * 思考模式：展示模型推理过程，可按提供商配置思考深度
 * **Markdown 消息渲染**（代码块、标题、链接等）
@@ -52,6 +52,7 @@
 * 支持添加多个 [MCP（Model Context Protocol）](https://modelcontextprotocol.io/) 服务器
 * 可按模型单独开关「允许调用 MCP 服务器」
 * 对话中展示工具调用记录：服务器、工具名称、耗时与错误信息
+* 使用 OpenAI 标准 tool calling（`tools` / `tool_calls` / `tool` 消息），模型不支持时自动回退到文本协议
 
 ### 🗂️ 历史对话
 
@@ -81,11 +82,12 @@
 > ### 预置的 LLM 提供商
 >
 > * [x] OpenAI / Azure OpenAI
-> * [x] Google Gemini
+> * [x] Google Gemini（OpenAI 兼容端点）
 > * [x] DeepSeek
 > * [x] Dashscope (阿里云百炼)
-> * [x] Claude
-> * [x] 自定义 API
+> * [x] 自定义 OpenAI 兼容 API
+>
+> Claude 原生协议已移除；如需使用，请通过自定义 OpenAI 兼容网关接入。
 
 ## 🔐 隐私与数据
 

@@ -56,6 +56,7 @@
 
     <string name="model_edit_thinking">啟用思考 (Thinking)</string>
     <string name="model_edit_thinking_deepseek">DeepSeek V4 深度思考</string>
+    <string name="model_edit_claude_removed">Claude 原生協議已移除，請刪除該模型或改用自訂 OpenAI 相容端點。</string>
     <string name="model_edit_thinking_claude">Claude 擴充套件思考（自適應/預算模式）</string>
     <string name="model_edit_thinking_gemini">Gemini 深度思考</string>
     <string name="model_edit_thinking_openai">OpenAI o-series / GPT-5 推理</string>

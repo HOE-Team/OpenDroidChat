@@ -3,21 +3,31 @@ OpenDroidChat LLM Config Module
 Copyright (C) 2025-2026 HOE Team. All rights reserved.
 The source code is open-sourced under the MIT License.
 */
+@file:OptIn(kotlinx.serialization.ExperimentalSerializationApi::class)
+
 package com.hoeteam.opendroidchat.data
 
 import android.annotation.SuppressLint
 import androidx.compose.runtime.Immutable
+import kotlinx.serialization.EncodeDefault
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonElement
 
-// LLM 提供商枚举
-enum class LlmProvider(val displayName: String) {
+/**
+ * LLM 提供商。
+ *
+ * 除 Claude 外，所有提供商都走统一的 OpenAI 兼容协议
+ * （/chat/completions + Bearer 鉴权 + 标准 tool calling）。
+ * Gemini 使用 Google 官方提供的 OpenAI 兼容端点。
+ * Claude 的原生协议实现已被移除，保留枚举仅用于兼容旧配置并给出明确提示。
+ */
+enum class LlmProvider(val displayName: String, val selectable: Boolean = true) {
     OpenAI("OpenAI / Azure OpenAI"),
-    Gemini("Google Gemini API"),
+    Gemini("Google Gemini（OpenAI 兼容）"),
     DeepSeek("DeepSeek"),
     Dashscope("阿里云百炼(Dashscope)"),
-    Claude("Claude"),
-    Custom("自定义 API")
+    Claude("Claude（原生协议已移除）", selectable = false),
+    Custom("自定义 OpenAI 兼容 API")
 }
 
 // 单个 LLM 模型的配置
@@ -33,9 +43,8 @@ data class LlmModel(
     val appId: String? = null,
     val useStream: Boolean = true, // 是否使用流式传输，默认为 true
     val enableThinking: Boolean = false, // 是否启用思考模式
-    val reasoningEffort: String? = null, // 思考深度（OpenAI: low/medium/high, DeepSeek: high/max, Claude: low/medium/high/xhigh）
+    val reasoningEffort: String? = null, // 思考深度（OpenAI: low/medium/high, DeepSeek: high/max）
     val enableMcp: Boolean = false // 是否允许该模型调用 MCP 服务器工具
-
 )
 
 // 聊天消息 (用于 UI 展示)
@@ -48,7 +57,7 @@ data class Message(
     val isStreaming: Boolean = false,
     val isThinkingStreaming: Boolean = false, // 思考内容是否仍在流式传输
     val selectedFile: SelectedFile? = null,
-    val reasoningText: String? = null, // 思考内容（reasoning/reasoning_text）
+    val reasoningText: String? = null, // 思考内容（reasoning/reasoning_content）
     val segments: List<McpSegment> = emptyList() // 思考块与 MCP 调用按发生顺序堆叠
 )
 
@@ -65,7 +74,7 @@ data class SelectedFile(
     val content: String
 )
 
-// ----------------- API 传输数据模型 (用于 Ktor 序列化) -----------------
+// ----------------- API 传输数据模型 (OpenAI 兼容协议) -----------------
 
 @SuppressLint("UnsafeOptInUsageError")
 @Serializable
@@ -75,101 +84,98 @@ data class ChatRequest(
     val stream: Boolean? = null,
     val thinking: JsonElement? = null,          // DeepSeek: {"type": "enabled"/"disabled"}
     val enable_thinking: Boolean? = null,       // Qwen: true/false
-    val reasoning_effort: String? = null,       // DeepSeek reasoning effort
+    val reasoning_effort: String? = null,       // DeepSeek / OpenAI reasoning effort
     // 当开启思考时，自动跳过 temperature、top_p 等采样参数
     val temperature: JsonElement? = null,       // 思考模式下置空
-    val top_p: JsonElement? = null              // 思考模式下置空
+    val top_p: JsonElement? = null,             // 思考模式下置空
+    val tools: List<ToolDefinition>? = null,    // OpenAI 标准工具定义
+    val tool_choice: JsonElement? = null        // "auto" / "none" / 指定工具
 )
 
-// Claude 专用请求体 (Claude API 格式与 OpenAI 不同)
+// OpenAI 标准工具定义
 @SuppressLint("UnsafeOptInUsageError")
 @Serializable
-data class ClaudeChatRequest(
-    val model: String,
-    val max_tokens: Int = 8192,
-    val messages: List<ClaudeApiMessage>,
-    val stream: Boolean? = null,
-    val system: String? = null,
-    val thinking: ClaudeThinkingConfig? = null,
-    val outputConfig: ClaudeOutputConfig? = null
-)
-
-@SuppressLint("UnsafeOptInUsageError")
-@Serializable
-data class ClaudeThinkingConfig(
-    val type: String, // "enabled", "disabled", "adaptive"
-    val budgetTokens: Int? = null, // 固定预算模式用
-    val display: String? = null   // "summarized" 或 "omitted", 仅自适应模式
+data class ToolDefinition(
+    @EncodeDefault
+    val type: String = "function",
+    val function: ToolFunctionDefinition
 )
 
 @SuppressLint("UnsafeOptInUsageError")
 @Serializable
-data class ClaudeOutputConfig(
-    val effort: String? = null // "low", "medium", "high", "xhigh" 控制思考深度（Claude 4.6+ 自适应模式）
+data class ToolFunctionDefinition(
+    val name: String,
+    val description: String? = null,
+    val parameters: JsonElement? = null
 )
 
+// 非流式 / 历史消息中的工具调用
+@SuppressLint("UnsafeOptInUsageError")
+@Serializable
+data class ApiToolCall(
+    @EncodeDefault
+    val id: String = "",
+    @EncodeDefault
+    val type: String = "function",
+    val function: ApiFunctionCall = ApiFunctionCall()
+)
 
 @SuppressLint("UnsafeOptInUsageError")
 @Serializable
-data class ClaudeApiMessage(
-    val role: String,
-    val content: String
+data class ApiFunctionCall(
+    @EncodeDefault
+    val name: String = "",
+    @EncodeDefault
+    val arguments: String = ""
 )
 
-// Gemini 思考配置
+// 流式增量中的工具调用分片
 @SuppressLint("UnsafeOptInUsageError")
 @Serializable
-data class GeminiThinkingConfig(
-    val thinkingLevel: String? = null, // "high"/"off"
-    val thinkingBudget: Int? = null    // -1/0
+data class ApiToolCallDelta(
+    val index: Int = 0,
+    val id: String? = null,
+    val type: String? = null,
+    val function: ApiFunctionCallDelta? = null
+)
+
+@SuppressLint("UnsafeOptInUsageError")
+@Serializable
+data class ApiFunctionCallDelta(
+    val name: String? = null,
+    val arguments: String? = null
 )
 
 @SuppressLint("UnsafeOptInUsageError")
 @Serializable
 data class ChatResponse(
     val id: String? = null,
-    val choices: List<Choice>
+    val choices: List<Choice> = emptyList()
 )
 
 @SuppressLint("UnsafeOptInUsageError")
 @Serializable
 data class Choice(
     val message: ApiMessage? = null,
-    val delta: Delta? = null
+    val delta: Delta? = null,
+    val finish_reason: String? = null
 )
 
 @SuppressLint("UnsafeOptInUsageError")
 @Serializable
 data class Delta(
     val content: String? = null,
-    val reasoning_content: String? = null  // DeepSeek/Qwen 思考内容字段
+    val reasoning_content: String? = null, // DeepSeek/Qwen 思考内容字段
+    val tool_calls: List<ApiToolCallDelta>? = null
 )
 
 @SuppressLint("UnsafeOptInUsageError")
 @Serializable
 data class ApiMessage(
-    val role: String, // "user" 或 "assistant"
-    val content: String,
-    val reasoning_content: String? = null  // 思考内容（非流式响应用）
-)
-
-// Gemini Streaming Models
-@Serializable
-data class GeminiContent(
-    val parts: List<GeminiPart>
-)
-
-@Serializable
-data class GeminiPart(
-    val text: String
-)
-
-@Serializable
-data class GeminiResponse(
-    val candidates: List<GeminiCandidate>
-)
-
-@Serializable
-data class GeminiCandidate(
-    val content: GeminiContent
+    val role: String, // "system" / "user" / "assistant" / "tool"
+    val content: String? = null,
+    val reasoning_content: String? = null, // 思考内容（非流式响应用）
+    val tool_calls: List<ApiToolCall>? = null, // assistant 的工具调用
+    val tool_call_id: String? = null, // tool 消息对应的调用 id
+    val name: String? = null // 可选：工具名
 )

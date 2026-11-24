@@ -40,7 +40,7 @@
 
 * Supports Android 6.0 (API level 23) and above
 * Native, beautiful Material 3 Expressive UI with dark mode and a landscape NavigationRail
-* Built-in OpenAI / Azure OpenAI, Google Gemini, DeepSeek, Dashscope (Aliyun Bailian), Claude, plus custom API support
+* Built-in OpenAI / Azure OpenAI, Google Gemini (OpenAI-compatible endpoint), DeepSeek, Dashscope (Aliyun Bailian), plus custom OpenAI-compatible API support; all use `/chat/completions` and standard tool calling
 * Streaming (typewriter) and non-streaming output
 * Thinking mode with a visible reasoning process and per-provider reasoning effort
 * **Markdown message rendering** (code blocks, headings, links, etc.)
@@ -52,6 +52,7 @@
 * Add multiple [MCP (Model Context Protocol)](https://modelcontextprotocol.io/) servers
 * Toggle “allow MCP server calls” per model
 * Tool call records (server, tool, duration, errors) are shown inside the conversation
+* Uses OpenAI-standard tool calling (`tools` / `tool_calls` / `tool` messages), with automatic fallback to the text protocol for older models
 
 ### 🗂️ Chat History
 
@@ -81,11 +82,12 @@
 > ### Pre-configured LLM Providers
 >
 > * [x] OpenAI / Azure OpenAI
-> * [x] Google Gemini
+> * [x] Google Gemini (OpenAI-compatible endpoint)
 > * [x] DeepSeek
 > * [x] Dashscope (Aliyun Bailian)
-> * [x] Claude
-> * [x] Custom API
+> * [x] Custom OpenAI-compatible API
+>
+> The native Claude protocol has been removed; use a custom OpenAI-compatible gateway if needed.
 
 ## 🔐 Privacy & Data
 
