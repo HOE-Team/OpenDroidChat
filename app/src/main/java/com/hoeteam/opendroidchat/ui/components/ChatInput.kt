@@ -5,17 +5,18 @@ The source code is open-sourced under the MIT License.
 */
 package com.hoeteam.opendroidchat.ui.components
 
+import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
-import androidx.compose.animation.core.Spring
-import androidx.compose.foundation.background
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
@@ -30,6 +31,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextAlign
@@ -55,6 +57,19 @@ fun ChatInput(
 
     val isFabEnabled = (text.isNotBlank() || selectedFile != null) && !isLoading
 
+    val fabScale by animateFloatAsState(
+        targetValue = if (isFabPressed) 0.9f else if (isFabEnabled) 1f else 0.85f,
+        animationSpec = spring(Spring.DampingRatioMediumBouncy)
+    )
+    val fabShape by animateDpAsState(
+        targetValue = if (isLoading) 6.dp else 10.dp,
+        animationSpec = spring(Spring.DampingRatioLowBouncy)
+    )
+    val addBtnScale by animateFloatAsState(
+        targetValue = if (isAddPressed) 0.9f else 1f,
+        animationSpec = spring(Spring.DampingRatioMediumBouncy)
+    )
+
     Column(
         // 外层 Scaffold + NavigationBar 已经处理了系统导航栏 inset，
         // 这里再叠加一次会让输入框与底部导航之间多出一整条间隙
@@ -71,26 +86,26 @@ fun ChatInput(
             )
         }
 
-        OutlinedTextField(
-            value = text,
-            onValueChange = onTextChange,
-            placeholder = { Text(stringResource(R.string.chat_input_placeholder)) },
+        // 刻意不使用 OutlinedTextField / TextField：
+        // 当前解析到的 Compose 1.12 中，Material3 的 TextField 内部仍以旧的
+        // indication = LocalIndication 方式调用 clickable，而 foundation 1.12
+        // 已强制要求 IndicationNodeFactory —— 聚焦或点击时会抛
+        // IllegalArgumentException 导致崩溃。BasicTextField + 自绘 Surface
+        // 既避开该问题，也让输入框渲染更轻。
+        Surface(
             modifier = Modifier.fillMaxWidth(),
-            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Send),
-            keyboardActions = KeyboardActions(onSend = { if (isFabEnabled) onSend() }),
-            singleLine = false,
-            maxLines = 5,
-            enabled = !isLoading,
             shape = RoundedCornerShape(20.dp),
-
-            leadingIcon = {
-                val addBtnScale by animateFloatAsState(
-                    targetValue = if (isAddPressed) 0.9f else 1f,
-                    animationSpec = spring(Spring.DampingRatioMediumBouncy)
-                )
-
+            color = MaterialTheme.colorScheme.surface,
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
+            tonalElevation = 0.dp
+        ) {
+            Row(
+                modifier = Modifier.padding(horizontal = 4.dp, vertical = 4.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
                 IconButton(
                     onClick = onAddFile,
+                    interactionSource = addFileInteractionSource,
                     enabled = !isLoading,
                     modifier = Modifier
                         .size(36.dp)
@@ -103,17 +118,37 @@ fun ChatInput(
                         tint = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
-            },
 
-            trailingIcon = {
-                val fabScale by animateFloatAsState(
-                    targetValue = if (isFabPressed) 0.9f else if (isFabEnabled) 1f else 0.85f,
-                    animationSpec = spring(Spring.DampingRatioMediumBouncy)
-                )
-
-                val fabShape by animateDpAsState(
-                    targetValue = if (isLoading) 6.dp else 10.dp,
-                    animationSpec = spring(Spring.DampingRatioLowBouncy)
+                BasicTextField(
+                    value = text,
+                    onValueChange = onTextChange,
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(horizontal = 4.dp, vertical = 10.dp),
+                    enabled = !isLoading,
+                    textStyle = MaterialTheme.typography.bodyLarge.copy(
+                        color = if (isLoading) {
+                            MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
+                        } else {
+                            MaterialTheme.colorScheme.onSurface
+                        }
+                    ),
+                    cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Send),
+                    keyboardActions = KeyboardActions(onSend = { if (isFabEnabled) onSend() }),
+                    maxLines = 5,
+                    decorationBox = { innerTextField ->
+                        Box {
+                            if (text.isEmpty()) {
+                                Text(
+                                    text = stringResource(R.string.chat_input_placeholder),
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                            innerTextField()
+                        }
+                    }
                 )
 
                 Box(
@@ -122,8 +157,18 @@ fun ChatInput(
                         .size(36.dp)
                         .scale(fabScale)
                         .clip(RoundedCornerShape(fabShape))
-                        .background(if (isFabEnabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant)
-                        .clickable(enabled = isFabEnabled) { onSend() },
+                        .background(
+                            if (isFabEnabled) {
+                                MaterialTheme.colorScheme.primary
+                            } else {
+                                MaterialTheme.colorScheme.surfaceVariant
+                            }
+                        )
+                        .clickable(
+                            interactionSource = fabInteractionSource,
+                            indication = null,
+                            enabled = isFabEnabled
+                        ) { onSend() },
                     contentAlignment = Alignment.Center
                 ) {
                     if (isLoading) {
@@ -137,12 +182,16 @@ fun ChatInput(
                             Icons.AutoMirrored.Filled.Send,
                             contentDescription = stringResource(R.string.chat_send),
                             modifier = Modifier.size(16.dp),
-                            tint = if (isFabEnabled) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)
+                            tint = if (isFabEnabled) {
+                                MaterialTheme.colorScheme.onPrimary
+                            } else {
+                                MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)
+                            }
                         )
                     }
                 }
             }
-        )
+        }
 
         // 输入框下方的小字提示
         Spacer(modifier = Modifier.height(2.dp))

@@ -91,9 +91,26 @@ android {
     }
 }
 
+// markdown-renderer 0.46.0 依赖 kotlin-stdlib 2.4.21，会把整个 classpath 抬高，
+// 而我们用的 Kotlin 编译器是 2.2.x，读不了 2.4 的元数据（KotlinMetadataMismatch）。
+// 这里把 kotlin-stdlib 锁回编译器版本，运行时 API 完全兼容。
+configurations.configureEach {
+    resolutionStrategy {
+        force("org.jetbrains.kotlin:kotlin-stdlib:2.2.10")
+        force("org.jetbrains.kotlin:kotlin-stdlib-jdk8:2.2.10")
+        force("org.jetbrains.kotlin:kotlin-stdlib-jdk7:2.2.10")
+    }
+}
+
 kotlin {
     compilerOptions {
         jvmTarget.set(JvmTarget.JVM_11)
+        // Compose 稳定性配置：列表项里的 Message/Color/Modifier 等无法被自动推断为稳定，
+        // 开启强跳过后，未变化的消息气泡会真正跳过重组（对长对话滚动与流式输出很关键）
+        freeCompilerArgs.addAll(
+            "-P",
+            "plugin:androidx.compose.compiler.plugins.kotlin:strongSkipping=true"
+        )
     }
 }
 
@@ -131,8 +148,14 @@ dependencies {
     implementation(libs.io.ktor.ktor.client.content.negotiation6)
     implementation(libs.io.ktor.ktor.serialization.kotlinx.json6)
 
-    // Markdown 渲染 (直接使用 Markwon 以支持深色模式下行内代码主题)
-    implementation(libs.markwon.core)
+    // Markdown 渲染：改用 Compose 原生的 multiplatform-markdown-renderer
+    // - -m3：Material 3 主题
+    // - -code：代码块语法高亮（Highlights）
+    // - -coil3：Markdown 内图片加载
+    implementation(libs.multiplatform.markdown.renderer)
+    implementation(libs.multiplatform.markdown.renderer.m3)
+    implementation(libs.multiplatform.markdown.renderer.code)
+    implementation(libs.multiplatform.markdown.renderer.coil3)
 
     implementation(libs.androidx.material.icons.core)
     implementation(libs.androidx.material.icons.extended)

@@ -50,10 +50,28 @@ fun LicenseScreen(
             licenseUrl = "https://github.com/androidx/androidx/blob/androidx-main/LICENSE.txt"
         ),
         OpenSourceLibrary(
-            name = "Markwon",
+            name = "multiplatform-markdown-renderer",
             type = "Markdown 渲染库",
             license = "Apache-2.0",
-            licenseUrl = "https://github.com/noties/Markwon/blob/master/LICENSE"
+            licenseUrl = "https://github.com/mikepenz/multiplatform-markdown-renderer/blob/develop/LICENSE"
+        ),
+        OpenSourceLibrary(
+            name = "JetBrains Markdown",
+            type = "Markdown 解析器",
+            license = "Apache-2.0",
+            licenseUrl = "https://github.com/JetBrains/markdown/blob/master/LICENSE"
+        ),
+        OpenSourceLibrary(
+            name = "Highlights",
+            type = "代码语法高亮",
+            license = "Apache-2.0",
+            licenseUrl = "https://github.com/SnipMeDev/Highlights/blob/main/LICENSE"
+        ),
+        OpenSourceLibrary(
+            name = "Coil",
+            type = "图片加载库",
+            license = "Apache-2.0",
+            licenseUrl = "https://github.com/coil-kt/coil/blob/main/LICENSE.txt"
         ),
         OpenSourceLibrary(
             name = "OkHttp",

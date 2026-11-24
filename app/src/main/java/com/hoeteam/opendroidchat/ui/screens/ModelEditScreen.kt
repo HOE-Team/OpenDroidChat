@@ -36,6 +36,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.hoeteam.opendroidchat.R
 import com.hoeteam.opendroidchat.data.LlmModel
 import com.hoeteam.opendroidchat.data.LlmProvider
+import com.hoeteam.opendroidchat.ui.components.AppTextField
 import com.hoeteam.opendroidchat.viewmodel.ChatViewModel
 import com.hoeteam.opendroidchat.viewmodel.ChatViewModelFactory
 
@@ -166,13 +167,13 @@ fun ModelEditScreen(
             verticalArrangement = Arrangement.spacedBy(20.dp)
         ) {
             M3EInputSection(title = stringResource(R.string.model_edit_section_basic)) {
-                OutlinedTextField(
+                AppTextField(
                     value = name,
                     onValueChange = { name = it },
-                    label = { Text(stringResource(R.string.model_edit_display_name), fontWeight = FontWeight.Bold) },
-                    placeholder = { Text(stringResource(R.string.model_edit_display_name_hint)) },
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(16.dp)
+                    label = stringResource(R.string.model_edit_display_name),
+                    placeholder = stringResource(R.string.model_edit_display_name_hint),
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
                 )
 
                 Spacer(modifier = Modifier.height(12.dp))
@@ -181,18 +182,14 @@ fun ModelEditScreen(
                     expanded = expanded,
                     onExpandedChange = { expanded = !expanded }
                 ) {
-                    OutlinedTextField(
+                    AppTextField(
                         value = provider.displayName,
                         onValueChange = {},
-                        readOnly = true,
-                        label = { Text(stringResource(R.string.model_edit_provider), fontWeight = FontWeight.Bold) },
+                        enabled = false,
+                        label = stringResource(R.string.model_edit_provider),
                         trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
-                        modifier = Modifier.menuAnchor().fillMaxWidth(),
-                        shape = RoundedCornerShape(16.dp),
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = MaterialTheme.colorScheme.primary,
-                            unfocusedBorderColor = MaterialTheme.colorScheme.outline
-                        )
+                        singleLine = true,
+                        modifier = Modifier.menuAnchor().fillMaxWidth()
                     )
                     ExposedDropdownMenu(
                         expanded = expanded,
@@ -230,50 +227,49 @@ fun ModelEditScreen(
             }
 
             M3EInputSection(title = stringResource(R.string.model_edit_section_api)) {
-                OutlinedTextField(
+                AppTextField(
                     value = modelName,
                     onValueChange = { modelName = it },
-                    label = { Text(stringResource(R.string.model_edit_model_id), fontWeight = FontWeight.Bold) },
-                    placeholder = { Text(stringResource(R.string.model_edit_model_id_hint)) },
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(16.dp)
+                    label = stringResource(R.string.model_edit_model_id),
+                    placeholder = stringResource(R.string.model_edit_model_id_hint),
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
                 )
 
                 Spacer(modifier = Modifier.height(12.dp))
 
-                OutlinedTextField(
+                AppTextField(
                     value = apiKey,
                     onValueChange = { apiKey = it },
-                    label = { Text(stringResource(R.string.model_edit_api_key), fontWeight = FontWeight.Bold) },
+                    label = stringResource(R.string.model_edit_api_key),
+                    singleLine = true,
                     visualTransformation = PasswordVisualTransformation(),
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(16.dp)
+                    modifier = Modifier.fillMaxWidth()
                 )
 
                 if (provider == LlmProvider.Custom) {
                     Spacer(modifier = Modifier.height(12.dp))
-                    OutlinedTextField(
+                    AppTextField(
                         value = customApiUrl,
                         onValueChange = { customApiUrl = it },
-                        label = { Text(stringResource(R.string.model_edit_custom_url), fontWeight = FontWeight.Bold) },
-                        placeholder = { Text(stringResource(R.string.model_edit_custom_url_hint)) },
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(16.dp)
+                        label = stringResource(R.string.model_edit_custom_url),
+                        placeholder = stringResource(R.string.model_edit_custom_url_hint),
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
                     )
                 }
             }
 
             M3EInputSection(title = stringResource(R.string.model_edit_section_advanced)) {
-                OutlinedTextField(
+                AppTextField(
                     value = systemPrompt,
                     onValueChange = { systemPrompt = it },
-                    label = { Text(stringResource(R.string.model_edit_system_prompt), fontWeight = FontWeight.Bold) },
-                    placeholder = { Text(stringResource(R.string.model_edit_system_prompt_hint)) },
+                    label = stringResource(R.string.model_edit_system_prompt),
+                    placeholder = stringResource(R.string.model_edit_system_prompt_hint),
                     maxLines = 5,
                     minLines = 3,
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(16.dp)
+                    modifier = Modifier.fillMaxWidth()
                 )
 
                 if (provider == LlmProvider.Custom) {
@@ -341,18 +337,13 @@ fun ModelEditScreen(
                             expanded = effortExpanded,
                             onExpandedChange = { effortExpanded = !effortExpanded }
                         ) {
-                            OutlinedTextField(
+                            AppTextField(
                                 value = effortLabels[reasoningEffort] ?: reasoningEffort,
                                 onValueChange = {},
-                                readOnly = true,
-                                label = { Text(stringResource(R.string.model_edit_thinking_effort), fontWeight = FontWeight.Bold) },
+                                label = stringResource(R.string.model_edit_thinking_effort),
                                 trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = effortExpanded) },
-                                modifier = Modifier.menuAnchor().fillMaxWidth(),
-                                shape = RoundedCornerShape(16.dp),
-                                colors = OutlinedTextFieldDefaults.colors(
-                                    focusedBorderColor = MaterialTheme.colorScheme.primary,
-                                    unfocusedBorderColor = MaterialTheme.colorScheme.outline
-                                )
+                                singleLine = true,
+                                modifier = Modifier.menuAnchor().fillMaxWidth()
                             )
                             ExposedDropdownMenu(
                                 expanded = effortExpanded,

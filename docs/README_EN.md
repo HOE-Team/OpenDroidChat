@@ -32,7 +32,7 @@
 * [**Ktor**[↗]](https://ktor.io/) — HTTP client for communicating with LLM APIs and MCP servers
 * [**kotlinx.serialization**[↗]](https://github.com/Kotlin/kotlinx.serialization) — JSON serialization for request and response payloads
 * [**AndroidX DataStore**[↗]](https://developer.android.com/topic/libraries/architecture/datastore) — Settings, preferences, and launch behavior storage
-* [**Markwon**[↗]](https://github.com/noties/Markwon) — Markdown rendering for LLM messages
+* [**multiplatform-markdown-renderer**[↗]](https://github.com/mikepenz/multiplatform-markdown-renderer) — pure-Compose Markdown rendering (syntax highlighting / image loading)
 
 ## ✨ Features
 
@@ -43,7 +43,7 @@
 * Built-in OpenAI / Azure OpenAI, Google Gemini (OpenAI-compatible endpoint), DeepSeek, Dashscope (Aliyun Bailian), plus custom OpenAI-compatible API support; all use `/chat/completions` and standard tool calling
 * Streaming (typewriter) and non-streaming output
 * Thinking mode with a visible reasoning process and per-provider reasoning effort
-* **Markdown message rendering** (code blocks, headings, links, etc.)
+* **Markdown message rendering** (headings, lists, tables, links, images) with code syntax highlighting and smooth streaming
 * Edit messages, regenerate replies, and copy with one tap
 * Send text or code files as conversation context
 

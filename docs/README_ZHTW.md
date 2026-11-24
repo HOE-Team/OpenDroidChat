@@ -32,7 +32,7 @@
 * [**Ktor**[↗]](https://ktor.io/) — HTTP 用戶端，負責與 LLM API / MCP 伺服器通訊
 * [**kotlinx.serialization**[↗]](https://github.com/Kotlin/kotlinx.serialization) — 請求與回應資料的 JSON 序列化
 * [**AndroidX DataStore**[↗]](https://developer.android.com/topic/libraries/architecture/datastore) — 設定、偏好與啟動行為儲存
-* [**Markwon**[↗]](https://github.com/noties/Markwon) — 用於渲染 LLM 訊息中的 Markdown
+* [**multiplatform-markdown-renderer**[↗]](https://github.com/mikepenz/multiplatform-markdown-renderer) — 純 Compose Markdown 渲染（程式碼高亮 / 圖片載入）
 
 ## ✨ 特性
 
@@ -43,7 +43,7 @@
 * 內建 OpenAI / Azure OpenAI、Google Gemini（OpenAI 相容端點）、DeepSeek、Dashscope（阿里雲百煉），並支援自訂 OpenAI 相容 API；統一使用 `/chat/completions` 與標準 tool calling
 * 支援串流（打字機）與非串流輸出
 * 思考模式：展示模型推理過程，可依提供商設定思考深度
-* **Markdown 訊息渲染**（程式碼區塊、標題、連結等）
+* **Markdown 訊息渲染**（標題、清單、表格、連結、圖片），程式碼區塊語法高亮，串流輸出流暢
 * 訊息編輯、重新生成、一鍵複製
 * 可將文字 / 程式碼檔案作為上下文傳送給模型
 

@@ -32,6 +32,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.hoeteam.opendroidchat.R
 import com.hoeteam.opendroidchat.data.McpServer
+import com.hoeteam.opendroidchat.ui.components.AppTextField
 import com.hoeteam.opendroidchat.viewmodel.ChatViewModel
 import com.hoeteam.opendroidchat.viewmodel.ChatViewModelFactory
 
@@ -132,52 +133,50 @@ fun McpServerEditScreen(
                 .padding(horizontal = 16.dp, vertical = 8.dp)
         ) {
             McpInputSection(title = stringResource(R.string.mcp_edit_section_basic)) {
-                OutlinedTextField(
+                AppTextField(
                     value = name,
                     onValueChange = { name = it },
-                    label = { Text(stringResource(R.string.mcp_edit_name), fontWeight = FontWeight.Bold) },
-                    placeholder = { Text(stringResource(R.string.mcp_edit_name_hint)) },
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(16.dp)
+                    label = stringResource(R.string.mcp_edit_name),
+                    placeholder = stringResource(R.string.mcp_edit_name_hint),
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
                 )
 
                 Spacer(modifier = Modifier.height(12.dp))
 
-                OutlinedTextField(
+                AppTextField(
                     value = url,
                     onValueChange = { url = it },
-                    label = { Text(stringResource(R.string.mcp_edit_url), fontWeight = FontWeight.Bold) },
-                    placeholder = { Text(stringResource(R.string.mcp_edit_url_hint)) },
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(16.dp)
+                    label = stringResource(R.string.mcp_edit_url),
+                    placeholder = stringResource(R.string.mcp_edit_url_hint),
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
                 )
 
                 Spacer(modifier = Modifier.height(12.dp))
 
-                OutlinedTextField(
+                AppTextField(
                     value = apiKey,
                     onValueChange = { apiKey = it },
-                    label = { Text(stringResource(R.string.mcp_edit_api_key), fontWeight = FontWeight.Bold) },
-                    placeholder = { Text(stringResource(R.string.mcp_edit_api_key_hint)) },
+                    label = stringResource(R.string.mcp_edit_api_key),
+                    placeholder = stringResource(R.string.mcp_edit_api_key_hint),
                     visualTransformation = PasswordVisualTransformation(),
                     singleLine = true,
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(16.dp)
+                    modifier = Modifier.fillMaxWidth()
                 )
             }
 
             Spacer(modifier = Modifier.height(16.dp))
 
             McpInputSection(title = stringResource(R.string.mcp_edit_section_advanced)) {
-                OutlinedTextField(
+                AppTextField(
                     value = description,
                     onValueChange = { description = it },
-                    label = { Text(stringResource(R.string.mcp_edit_description), fontWeight = FontWeight.Bold) },
-                    placeholder = { Text(stringResource(R.string.mcp_edit_description_hint)) },
+                    label = stringResource(R.string.mcp_edit_description),
+                    placeholder = stringResource(R.string.mcp_edit_description_hint),
                     maxLines = 4,
                     minLines = 2,
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(16.dp)
+                    modifier = Modifier.fillMaxWidth()
                 )
 
                 Spacer(modifier = Modifier.height(12.dp))

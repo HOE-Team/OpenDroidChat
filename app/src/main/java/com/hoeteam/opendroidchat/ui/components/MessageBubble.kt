@@ -144,14 +144,13 @@ fun MessageBubble(
                     ) {
                         if (isEditing) {
                             // 编辑模式：将聊天框变为输入框
-                            OutlinedTextField(
+                            AppTextField(
                                 value = editingText,
                                 onValueChange = onEditTextChange,
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .padding(horizontal = 12.dp, vertical = 10.dp),
-                                placeholder = { Text(stringResource(com.hoeteam.opendroidchat.R.string.message_edit_placeholder)) },
-                                singleLine = false,
+                                placeholder = stringResource(com.hoeteam.opendroidchat.R.string.message_edit_placeholder),
                                 maxLines = 5
                             )
                             Row(
@@ -197,8 +196,8 @@ fun MessageBubble(
                             when (seg) {
                                 is McpSegment.Thinking -> ThinkingBlock(reasoningText = seg.text, isStreaming = false)
                                 is McpSegment.Text -> if (seg.text.isNotBlank()) {
-                                    MessageMarkdown(
-                                        text = seg.text,
+                                    MarkdownText(
+                                        markdown = seg.text,
                                         modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
                                         textColor = textColor
                                     )
@@ -218,13 +217,15 @@ fun MessageBubble(
 
                         // 常规内容
                         if (message.text.isNotBlank()) {
-                            MessageMarkdown(
-                                text = message.text,
+                            MarkdownText(
+                                markdown = message.text,
                                 modifier = Modifier.padding(
                                     horizontal = 16.dp,
                                     vertical = if (message.reasoningText.isNullOrBlank()) 12.dp else 8.dp
                                 ),
-                                textColor = textColor
+                                textColor = textColor,
+                                // 流式输出时保留上一帧结果，避免每秒闪成加载态
+                                retainState = true
                             )
                         }
                     }
@@ -318,29 +319,6 @@ private fun MessageActionIconButton(
             icon()
         }
     }
-}
-
-/** 消息正文的 Markdown 渲染（含代码块高亮样式）。 */
-@Composable
-private fun MessageMarkdown(
-    text: String,
-    modifier: Modifier,
-    textColor: Color
-) {
-    HybridMarkdown(
-        text = text,
-        modifier = modifier,
-        normalTextColor = textColor,
-        themedMarkdownText = { md, mod, txtColor, codeBg, codeTxtColor ->
-            ThemedMarkdownText(
-                markdown = md,
-                modifier = mod,
-                textColor = txtColor,
-                codeBackgroundColor = codeBg,
-                codeTextColor = codeTxtColor
-            )
-        }
-    )
 }
 
 @Composable
