@@ -328,10 +328,10 @@ private fun ThinkingBlock(
     reasoningText: String,
     isStreaming: Boolean
 ) {
-    // 流式思考过程中默认折叠：内容每帧都在变长，展开会让整条消息高度持续抖动；
-    // 思考结束后再自动展开，用户点一下仍可随时收起
-    var userExpanded by remember { mutableStateOf<Boolean?>(null) }
-    val expanded = userExpanded ?: !isStreaming
+    // 默认展开：思考过程必须实时可见。
+    // 之前做过"流式中折叠、结束后展开"，结果就是思考内容在界面上表现为
+    // 整块一次性出现（用户会误以为 SSE 坏了），已回退。
+    var expanded by remember { mutableStateOf(true) }
 
     Surface(
         shape = RoundedCornerShape(12.dp),
@@ -354,7 +354,7 @@ private fun ThinkingBlock(
                     .clickable(
                         interactionSource = headerInteraction,
                         indication = null
-                    ) { userExpanded = !expanded },
+                    ) { expanded = !expanded },
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
@@ -376,16 +376,14 @@ private fun ThinkingBlock(
                 )
             }
 
-            // 思考内容：限高 + 可滚动，避免超长思考把整条消息撑到几屏高
+            // 思考内容：不限制高度、不做内部滚动框，
+            // 否则流式过程中新增内容会被"藏"在滚动区域里，看起来像整块出现
             AnimatedVisibility(visible = expanded) {
                 Text(
                     text = reasoningText,
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.85f),
-                    modifier = Modifier
-                        .padding(top = 8.dp)
-                        .heightIn(max = 260.dp)
-                        .verticalScroll(rememberScrollState())
+                    modifier = Modifier.padding(top = 8.dp)
                 )
             }
         }

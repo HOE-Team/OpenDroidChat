@@ -24,6 +24,8 @@ import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.sample
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -43,6 +45,14 @@ import com.hoeteam.opendroidchat.viewmodel.ApiErrorState
 import com.hoeteam.opendroidchat.viewmodel.ChatViewModel
 import com.hoeteam.opendroidchat.viewmodel.ChatViewModelFactory
 import kotlinx.coroutines.launch
+
+/** 自动滚动的触发信号：任一字段变化都代表"最后一条消息的可视内容变了" */
+private data class AutoScrollTick(
+    val messageCount: Int,
+    val textLength: Int,
+    val reasoningLength: Int,
+    val segmentsWeight: Int
+)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -108,44 +118,98 @@ fun ChatScreen(
         }
     }
 
-    val isAtBottom by remember {
-        derivedStateOf {
-            val layoutInfo = lazyListState.layoutInfo
-            val visibleItemsInfo = layoutInfo.visibleItemsInfo
-            if (layoutInfo.totalItemsCount == 0) true
-            else {
-                val lastVisibleItem = visibleItemsInfo.lastOrNull() ?: return@derivedStateOf false
-                val isLastItem = lastVisibleItem.index == layoutInfo.totalItemsCount - 1
-                val itemBottom = lastVisibleItem.offset + lastVisibleItem.size
-                itemBottom <= layoutInfo.viewportEndOffset + 200
-            }
-        }
+    // ===== 自动跟随滚动 =====
+    // autoFollow：true = 跟随新内容贴底；false = 用户已主动离开底部
+    var autoFollow by remember { mutableStateOf(true) }
+    // 在长时间存活的协程里读取最新值，避免把 autoFollow 当 LaunchedEffect 的 key
+    val autoFollowState = rememberUpdatedState(autoFollow)
+
+    // 1) 用户手指按下拖动 → 交出滚动控制权
+    //    只用 isDragged 判定"用户接管"，绝不能用 canScrollForward 之类的几何量：
+    //    我们自己的程序化滚动也会让它变成 true，从而把 autoFollow 自己关掉
+    LaunchedEffect(isDragged) {
+        if (isDragged) autoFollow = false
     }
 
-    // 流式输出时按约 120ms 合并自动滚动，避免每个 token 都触发一次列表定位
-    val streamingAnchor = remember(messages) {
-        val last = messages.lastOrNull()
-        if (last?.isStreaming == true) last.text.length / 12 else -1
-    }
-    LaunchedEffect(messages.size, isLoading, streamingAnchor) {
-        if (isDragged) return@LaunchedEffect
-        if (messages.isNotEmpty() && isAtBottom) {
-            val lastIndex = if (isLoading) messages.size else messages.size - 1
-            if (lastIndex >= 0) {
-                if (messages.lastOrNull()?.isStreaming == true) {
-                    lazyListState.scrollToItem(lastIndex, scrollOffset = 100000)
-                } else {
-                    lazyListState.animateScrollToItem(lastIndex, scrollOffset = 100000)
-                }
+    // 3) 跟随滚动。
+    //
+    // 触发源必须覆盖"最后一条消息的任何可视变化"，而不是只看正文：
+    //   - 正文增长（text）
+    //   - 思考内容增长（reasoningText）
+    //   - MCP 调用块新增/更新（segments）
+    // 旧实现只看 text.length，所以"只有正文会触发自动滚动"，
+    // 思考与 MCP 调用阶段列表完全不动 —— 这就是本次问题的根因。
+    LaunchedEffect(Unit) {
+        snapshotFlow {
+            val last = messages.lastOrNull()
+            if (last == null) {
+                AutoScrollTick(0, 0, 0, 0)
+            } else {
+                AutoScrollTick(
+                    messages.size,
+                    last.text.length,
+                    last.reasoningText?.length ?: 0,
+                    last.segments.sumOf { segment ->
+                        when (segment) {
+                            is com.hoeteam.opendroidchat.data.McpSegment.Text -> segment.text.length
+                            is com.hoeteam.opendroidchat.data.McpSegment.Thinking -> segment.text.length
+                            is com.hoeteam.opendroidchat.data.McpSegment.Calls -> segment.calls.size * 1000
+                        }
+                    }
+                )
             }
         }
+            .distinctUntilChanged()
+            .sample(100)
+            .collect { tick ->
+                if (!autoFollowState.value || messages.isEmpty()) return@collect
+                val target = lazyListState.layoutInfo.totalItemsCount - 1
+                if (target >= 0) {
+                    lazyListState.scrollToItem(target, Int.MAX_VALUE)
+                }
+            }
+    }
+
+    // 4) 兜底：任何一次布局把底部撑开，只要还在跟随就立刻贴回。
+    //    这条不依赖具体字段，能覆盖"最后一个 chunk 落在两次采样之间"的情况。
+    LaunchedEffect(lazyListState) {
+        // 防抖：避免"滚动 → 布局 → 仍可前滚 → 再滚动"形成空转
+        var lastScrollAt = 0L
+        snapshotFlow { lazyListState.canScrollForward }
+            .collect { canScrollForward ->
+                val total = lazyListState.layoutInfo.totalItemsCount
+                if (total <= 0) return@collect
+                if (!canScrollForward) {
+                    autoFollow = true
+                } else if (autoFollowState.value) {
+                    val now = System.currentTimeMillis()
+                    if (now - lastScrollAt >= 80L) {
+                        lastScrollAt = now
+                        lazyListState.scrollToItem(total - 1, Int.MAX_VALUE)
+                    }
+                }
+            }
+    }
+
+    // 5) 新消息追加时立刻贴底
+    LaunchedEffect(messages.size) {
+        if (!autoFollowState.value) return@LaunchedEffect
+        val total = lazyListState.layoutInfo.totalItemsCount
+        if (total > 0) lazyListState.scrollToItem(total - 1, Int.MAX_VALUE)
     }
 
     // 打开/切换历史对话后直接定位到最后一条消息
     LaunchedEffect(activeConversationId) {
         if (activeConversationId != null && messages.isNotEmpty()) {
+            // 切换/恢复会话后回到「跟随」状态
+            autoFollow = true
             lazyListState.scrollToItem(messages.lastIndex, scrollOffset = 100000)
         }
+    }
+
+    // 发送新消息后重新进入跟随状态
+    LaunchedEffect(isLoading) {
+        if (isLoading) autoFollow = true
     }
 
     if (currentModel == null) {
@@ -270,20 +334,8 @@ fun ChatScreen(
             }
         },
         floatingActionButton = {
-            // derivedStateOf 的 lambda 只在首次组合时捕获 messages，
-            // 这里用 rememberUpdatedState 保证切换/新建对话后读到的是最新列表，
-            // 否则「到底部」FAB 会被上一段对话的状态错误地继承下来
-            val latestMessages by rememberUpdatedState(messages)
-            val showFab by remember {
-                derivedStateOf {
-                    val layoutInfo = lazyListState.layoutInfo
-                    val lastVisibleItem = layoutInfo.visibleItemsInfo.lastOrNull()
-                    latestMessages.isNotEmpty() && lastVisibleItem != null && (
-                        lastVisibleItem.index < layoutInfo.totalItemsCount - 1 ||
-                            lastVisibleItem.offset + lastVisibleItem.size > layoutInfo.viewportEndOffset + 150
-                    )
-                }
-            }
+            // 离开底部（autoFollow = false）且已有消息时显示「到底部」FAB
+            val showFab = messages.isNotEmpty() && !autoFollow
 
             // M3E 强力弹性物理缩放进入/退出
             AnimatedVisibility(
@@ -293,9 +345,13 @@ fun ChatScreen(
             ) {
                 FloatingActionButton(
                     onClick = {
+                        // 先恢复跟随，再滚到底：否则滚动结束后几何判定会把它又关掉，
+                        // 导致「点了到底部却不再自动跟随」
+                        autoFollow = true
                         scope.launch {
-                            if (messages.isNotEmpty()) {
-                                lazyListState.animateScrollToItem(if (isLoading) messages.size else messages.size - 1, 100000)
+                            val target = lazyListState.layoutInfo.totalItemsCount - 1
+                            if (target >= 0) {
+                                lazyListState.animateScrollToItem(target, Int.MAX_VALUE)
                             }
                         }
                     },

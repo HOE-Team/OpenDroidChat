@@ -160,8 +160,14 @@ class LlmApiService {
                 if (!force && now - lastFlushAt < throttleMillis) return
                 lastFlushAt = now
 
+                // 思考内容按「本次新增」推送，和正文保持同样的增量语义；
+                // 上层据此做增量拼接，避免每帧都把整段思考重新解析一遍
                 if (reasoningBuffer.length > emittedReasoningLength) {
-                    emit(StreamChunk(reasoningText = reasoningBuffer))
+                    emit(
+                        StreamChunk(
+                            reasoningText = reasoningBuffer.substring(emittedReasoningLength)
+                        )
+                    )
                     emittedReasoningLength = reasoningBuffer.length
                 }
                 if (contentBuffer.length > emittedContentLength) {
@@ -465,6 +471,9 @@ class LlmApiService {
             if (stream && onChunk != null) {
                 val roundContent = StringBuilder()
                 var pending = StringBuilder()
+                // reasoningText 是增量片段，必须累加：
+                // 这里既要把它回传给 UI，也要在带 tool_calls 时作为 reasoning_content 回传上游
+                val roundReasoning = StringBuilder()
                 sendChatStream(
                     messages = workingMessages,
                     config = config,
@@ -474,9 +483,8 @@ class LlmApiService {
                 ).collect { chunk ->
                     chunk.toolCalls?.let { nativeToolCalls = it }
                     if (!chunk.reasoningText.isNullOrBlank()) {
-                        val cleanedReasoning = ToolCallMarkup.stripMarkup(chunk.reasoningText)
-                        reasoning = cleanedReasoning
-                        onChunk("", cleanedReasoning)
+                        roundReasoning.append(chunk.reasoningText)
+                        onChunk("", ToolCallMarkup.stripMarkup(chunk.reasoningText))
                     }
                     roundContent.append(chunk.content)
                     pending.append(chunk.content)
@@ -490,6 +498,8 @@ class LlmApiService {
                     if (leftover.isNotBlank()) onChunk(leftover, null)
                 }
                 roundText = roundContent.toString()
+                reasoning = ToolCallMarkup.stripMarkup(roundReasoning.toString())
+                    .ifBlank { null }
             } else {
                 val result = sendChat(
                     messages = workingMessages,

@@ -404,15 +404,20 @@ class ChatViewModel(
         // 先插入占位消息：流式模式用于打字机效果；同时用于展示 MCP 调用容器（含加载转圈）
         appendMessage(Message(id = msgId, text = "", sender = Sender.LLM, isStreaming = useStream))
 
+        // MCP 流式同样按增量下发思考片段，这里需要自己累加
+        val mcpReasoning = StringBuilder()
+
         try {
             val result = apiService.sendChatWithMcp(
                 apiMessages, currentModel, mcpServers,
                 stream = useStream,
                 onChunk = { content: String, reasoningText: String? ->
+                    if (!reasoningText.isNullOrEmpty()) mcpReasoning.append(reasoningText)
+                    val aggregatedReasoning = mcpReasoning.toString().ifEmpty { null }
                     updateMessageById(msgId) { m ->
                         m.copy(
                             text = if (content.isEmpty()) m.text else m.text + content,
-                            reasoningText = reasoningText ?: m.reasoningText,
+                            reasoningText = aggregatedReasoning ?: m.reasoningText,
                             isStreaming = true,
                             // 开始输出正文时思考已经结束，避免思考块一直显示“思考中…”
                             isThinkingStreaming = when {
@@ -542,7 +547,8 @@ class ChatViewModel(
         appendMessage(initialLlmMessage)
 
         // 不在这里累积全文：每次都用增量追加到消息里，避免长回答时反复复制整段文本
-        var fullReasoningText = ""
+        // 思考内容按片段累加：服务端每个 chunk 只带新增的那段
+        val reasoningBuilder = StringBuilder()
         var isThinkingStreaming = false
         val shouldIgnoreThinking = !currentModel.enableThinking
         var hasError = false
@@ -569,9 +575,10 @@ class ChatViewModel(
                         _isResponding.value = true
                     }
 
-                    if (!shouldIgnoreThinking && chunk.reasoningText != null) {
-                        fullReasoningText = chunk.reasoningText
-                        isThinkingStreaming = chunk.reasoningText.isNotBlank()
+                    // reasoningText 现在是「本次新增」片段，需要累加，不能整体覆盖
+                    if (!shouldIgnoreThinking && !chunk.reasoningText.isNullOrEmpty()) {
+                        reasoningBuilder.append(chunk.reasoningText)
+                        isThinkingStreaming = true
                     }
                     if (chunk.content.isNotEmpty()) {
                         isThinkingStreaming = false
@@ -580,7 +587,11 @@ class ChatViewModel(
                     appendMessageChunk(
                         id = llmMessageId,
                         content = chunk.content,
-                        reasoningText = if (shouldIgnoreThinking) null else fullReasoningText.ifEmpty { null },
+                        reasoningText = if (shouldIgnoreThinking) {
+                            null
+                        } else {
+                            reasoningBuilder.toString().ifEmpty { null }
+                        },
                         isThinkingStreaming = isThinkingStreaming
                     )
                 }
